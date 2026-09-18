@@ -1,0 +1,3026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+
+<!-- ===== Home-screen app icon (self-contained, no extra files) ===== -->
+<meta name="theme-color" content="#0f1117" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="My Tracker" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20180%20180'%3E%3Cdefs%3E%3ClinearGradient%20id='g'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%237c5cff'/%3E%3Cstop%20offset='1'%20stop-color='%234dd0e1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='180'%20height='180'%20rx='40'%20fill='url(%23g)'/%3E%3Ctext%20x='90'%20y='120'%20font-size='96'%20text-anchor='middle'%3E%F0%9F%8E%AC%3C/text%3E%3C/svg%3E" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20180%20180'%3E%3Cdefs%3E%3ClinearGradient%20id='g'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%237c5cff'/%3E%3Cstop%20offset='1'%20stop-color='%234dd0e1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='180'%20height='180'%20rx='40'%20fill='url(%23g)'/%3E%3Ctext%20x='90'%20y='120'%20font-size='96'%20text-anchor='middle'%3E%F0%9F%8E%AC%3C/text%3E%3C/svg%3E" />
+<link rel="manifest" href='data:application/manifest+json,{"name":"My Tracker","short_name":"Tracker","display":"standalone","background_color":"%230f1117","theme_color":"%230f1117","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 180 180%27%3E%3Cdefs%3E%3ClinearGradient id=%27g%27 x1=%270%27 y1=%270%27 x2=%271%27 y2=%271%27%3E%3Cstop offset=%270%27 stop-color=%27%237c5cff%27/%3E%3Cstop offset=%271%27 stop-color=%27%234dd0e1%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%27180%27 height=%27180%27 rx=%2740%27 fill=%27url(%23g)%27/%3E%3Ctext x=%2790%27 y=%27120%27 font-size=%2796%27 text-anchor=%27middle%27%3E%F0%9F%8E%AC%3C/text%3E%3C/svg%3E","sizes":"any","type":"image/svg+xml"}]}' />
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #171a23;
+    --panel-2: #1e222d;
+    --border: #2a2f3d;
+    --text: #e6e8ee;
+    --muted: #9aa0ad;
+    --accent: #7c5cff;
+    --accent-2: #4dd0e1;
+    --good: #4caf7d;
+    --warn: #e0a458;
+    --danger: #e05a6a;
+    --star: #ffcf4d;
+    --radius: 14px;
+    --header-bg: rgba(15,17,23,0.92);
+  }
+  * { box-sizing: border-box; }
+  /* No blue text-selection highlight when clicking/shift-selecting cards */
+  .card, .row, .tab, .group-head, .card-actions, .stars, .flags, .genre-head, .viewbadge, .seg, .btn {
+    -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* keep text selectable where it matters: inputs, textareas, the detail description */
+  input, textarea, #detailModal, .modal p { -webkit-user-select: text; user-select: text; }
+  ::selection { background: var(--accent); color: #fff; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 80px;
+  }
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--header-bg);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px 0;
+  }
+  .top-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: 0.2px; }
+  .sync-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
+  .sync-dot.on { background: var(--good); box-shadow: 0 0 8px var(--good); }
+  .sync-dot.err { background: var(--danger); }
+  .spacer { flex: 1; }
+  button, select, input, textarea {
+    font-family: inherit; font-size: 14px; color: var(--text);
+  }
+  .btn {
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 12px; cursor: pointer; white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.ghost { background: transparent; }
+  .btn.small { padding: 5px 9px; font-size: 12px; }
+
+  .tabs { display: flex; gap: 6px; overflow-x: auto; padding: 12px 0 10px; -webkit-overflow-scrolling: touch; }
+  .tab {
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 999px; padding: 7px 14px; cursor: pointer; white-space: nowrap;
+  }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 0 16px; margin: 14px 0; }
+  .search { flex: 1; min-width: 180px; }
+  input[type=text], input[type=number], input[type=url], select, textarea {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 9px 11px; width: 100%; outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  select { cursor: pointer; }
+
+  .status-groups { padding: 0 16px; }
+  .group { margin-bottom: 22px; }
+  .group-head { display: flex; align-items: center; gap: 8px; margin: 6px 0 10px; }
+  .group-head h3 { margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+  .group-head.collapsible { cursor: pointer; user-select: none; }
+  .group-head.collapsible:hover h3 { color: var(--text); }
+  .group-head .caret { color: var(--muted); font-size: 12px; width: 12px; }
+  .genre-head { font-size: 12px; color: var(--accent-2); margin: 12px 0 6px; font-weight: 600; letter-spacing: .3px; }
+  .genre-head.collapsible { cursor: pointer; user-select: none; }
+  .genre-head.collapsible:hover { color: var(--text); }
+  .genre-head .caret { font-size: 11px; }
+
+  /* Sync flash toast */
+  #syncFlash {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%) translateY(-40px);
+    background: var(--good); color: #fff; font-size: 13px; font-weight: 600;
+    padding: 7px 16px; border-radius: 999px; z-index: 200; opacity: 0; pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+  }
+  #syncFlash.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Quick actions on a card (edit mode only) */
+  .poster-wrap { position: relative; width: 100%; }
+  .card-actions {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    display: none; gap: 4px; justify-content: space-between; align-items: stretch;
+    padding: 4px 5px; background: linear-gradient(to top, rgba(0,0,0,0.82), rgba(0,0,0,0)); z-index: 4;
+  }
+  body.can-edit .card:hover .card-actions { display: flex; }
+  .card-actions button {
+    flex: 1 1 0; min-width: 0; text-align: center;
+    background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.22); color: #fff;
+    border-radius: 6px; font-size: 11px; padding: 2px 0; cursor: pointer; line-height: 1.1;
+  }
+  .card-actions button:hover { border-color: var(--accent); background: rgba(0,0,0,0.85); }
+  .card-actions button.on { background: var(--accent); border-color: var(--accent); }
+  .status-menu {
+    position: absolute; z-index: 30; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 5px; min-width: 150px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .status-menu button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text); font-size: 13px; padding: 6px 8px; border-radius: 6px; cursor: pointer; }
+  .status-menu button:hover { background: var(--panel-2); }
+  .status-menu button.cur { color: var(--accent-2); font-weight: 600; }
+  /* Inline star rating */
+  .stars { display: inline-flex; gap: 1px; cursor: default; }
+  body.can-edit .stars { cursor: pointer; }
+  .stars .s { color: #4a4f5e; font-size: 13px; }
+  .stars .s.on { color: var(--star); }
+
+  /* Multi-select */
+  .card.selected { outline: 2px solid var(--accent); }
+  .sel-check { position: absolute; top: 6px; left: 6px; font-size: 18px; background: rgba(0,0,0,0.6); border-radius: 6px; padding: 0 4px; z-index: 3; }
+  #bulkBar {
+    position: sticky; top: 92px; z-index: 15; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    background: var(--panel-2); border-bottom: 1px solid var(--border); padding: 8px 16px; font-size: 13px;
+  }
+  #bulkBar #bulkCount { color: var(--accent-2); font-weight: 600; margin-right: 6px; }
+
+  /* Light theme */
+  body.light {
+    --bg: #f4f1ea; --panel: #fbf9f4; --panel-2: #ece8df; --border: #d9d3c7;
+    --text: #221f1a; --muted: #6f6a60; --header-bg: rgba(244,241,234,0.92);
+    --accent: #3b6fb0; --accent-2: #2b5488;
+  }
+  body.light .btn.primary { color: #fff; }
+
+  /* Autumn — warm, cozy, atmospheric; layered golden-to-rust gradient, warm brown accents */
+  body.sepia {
+    --bg: #f3e2c7; --panel: #f6ead2; --panel-2: #eeddbf; --border: #a86a3c;
+    --text: #3a2415; --muted: #8a6540; --accent: #8B4513; --accent-2: #632324;
+    --good: #6f7a3a; --warn: #b5651d; --danger: #8d2830; --star: #d98a2b;
+    --header-bg: rgba(243,226,199,0.92);
+  }
+  body.sepia .btn.primary { color: #fbeeda; }
+  body.sepia {
+    background:
+      radial-gradient(900px 600px at 12% -8%, rgba(217,138,43,0.45) 0%, rgba(217,138,43,0) 55%),
+      radial-gradient(1000px 700px at 92% 0%, rgba(146,60,39,0.4) 0%, rgba(146,60,39,0) 55%),
+      linear-gradient(160deg, #f6ead2 0%, #edd3a8 45%, #e2b57e 100%);
+    background-attachment: fixed;
+  }
+  body.sepia .card:hover { border-color: #b5651d; box-shadow: 0 0 12px rgba(181,101,29,0.35); }
+  body.sepia #grain { display:block; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:0.045;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+  /* Rainy Day — stormy blue, fogged glass; misty blue accent (never purple) */
+  body.rainy {
+    --bg: #0e1a26; --panel: rgba(20,42,58,0.55); --panel-2: rgba(12,26,38,0.55); --border: rgba(149,161,175,0.28);
+    --text: #bfd1d9; --muted: #7d95a3; --accent: #4d7fa0; --accent-2: #a0b6c4;
+    --good: #728c73; --warn: #8aa0ae; --danger: #9a6a7a; --star: #a0b6c4;
+    --header-bg: rgba(12,26,38,0.6);
+  }
+  body.rainy .card, body.rainy .modal, body.rainy .row, body.rainy .stat-card, body.rainy #moreMenu, body.rainy #addMenu, body.rainy #themeMenu, body.rainy .status-menu {
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  }
+  body.rainy { background: radial-gradient(1200px 800px at 55% -10%, #1a3247 0%, #0e1a26 70%); }
+  body.rainy .card:hover { border-color: #032f40; box-shadow: 0 0 0 2px rgba(3,47,64,0.9), 0 6px 18px rgba(3,47,64,0.6); }
+
+  /* Bruised Crimson — broken heart: crimson base, maroon cards, flesh-rose text, royal-red accent */
+  body.crimson {
+    --bg: #27040b; --panel: #3f0712; --panel-2: #330810; --border: #732233;
+    --text: #fecdd3; --muted: #c98a95; --accent: #a41e34; --accent-2: #fda4af;
+    --good: #7a9a6a; --warn: #b06a7a; --danger: #c0455a; --star: #fda4af;
+    --header-bg: rgba(39,4,11,0.92);
+  }
+  body.crimson { background: radial-gradient(1100px 800px at 50% -10%, #6a0f1e 0%, #27040b 65%); }
+  body.crimson .btn.primary { color: #fecdd3; }
+  body.crimson .card:hover { border-color: #a41e34; box-shadow: 0 0 16px rgba(164,30,52,0.5); }
+
+  /* Electric Purple (formerly Melancholic) — bruised charcoal/plum, neon accent */
+  body.melancholic {
+    --bg: #14111c; --panel: #1c1826; --panel-2: #241f30; --border: #3a3247;
+    --text: #d7d2e0; --muted: #8a8299; --accent: #b6318f; --accent-2: #3fd0d6;
+    --good: #5fae86; --warn: #d08a4e; --danger: #e0405a; --star: #d6b24a;
+    --header-bg: rgba(20,17,28,0.9);
+    font-family: "Inter", "Helvetica Neue", -apple-system, sans-serif;
+  }
+  body.melancholic input, body.melancholic textarea, body.melancholic select,
+  body.melancholic .row-title, body.melancholic .card-title {
+    font-family: "JetBrains Mono", "Courier New", monospace;
+  }
+  /* pulsing blurred glow orbs behind everything */
+  body.melancholic::before, body.melancholic::after {
+    content: ""; position: fixed; z-index: -2; border-radius: 50%;
+    filter: blur(90px); opacity: 0.5; pointer-events: none;
+  }
+  body.melancholic::before { width: 42vw; height: 42vw; left: -8vw; top: -6vw; background: #5a1f6b; animation: orb1 14s ease-in-out infinite; }
+  body.melancholic::after  { width: 38vw; height: 38vw; right: -8vw; bottom: -6vw; background: #7a1030; animation: orb2 18s ease-in-out infinite; }
+  @keyframes orb1 { 0%,100% { transform: translate(0,0) scale(1); opacity:.35 } 50% { transform: translate(4vw,3vh) scale(1.15); opacity:.55 } }
+  @keyframes orb2 { 0%,100% { transform: translate(0,0) scale(1); opacity:.3 } 50% { transform: translate(-3vw,-2vh) scale(1.2); opacity:.5 } }
+  /* subtle static grain overlay */
+  body.melancholic::selection { background: var(--accent); }
+  #grain { display: none; }
+  body.melancholic #grain {
+    display: block; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Better mobile */
+  @media (max-width: 600px) {
+    header { padding: 10px 12px 0; }
+    .top-row { gap: 8px; }
+    h1 { font-size: 17px; }
+    .btn.small { padding: 6px 8px; font-size: 11px; }
+    .toolbar { padding: 0 12px; gap: 6px; }
+    .status-groups, .stats-wrap { padding: 0 12px; }
+    .fab { width: 52px; height: 52px; font-size: 26px; right: 14px; bottom: 14px; }
+    .view-controls { width: 100%; }
+  }
+  .group-count { background: var(--panel-2); border: 1px solid var(--border); border-radius: 999px; font-size: 11px; padding: 1px 8px; color: var(--muted); }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; position: relative; cursor: pointer; transition: transform .08s ease, border-color .12s ease; }
+  .card:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .poster { width: 100%; aspect-ratio: 2/3; background: var(--panel-2); object-fit: cover; display: block; -webkit-user-drag: none; user-select: none; }
+  .poster.placeholder { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 34px; }
+  .card-body { padding: 10px 11px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1 1 auto; }
+  .card-title { font-weight: 600; font-size: 14px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-body .stars { margin-top: auto; padding-top: 6px; }
+  .card-ru { font-size: 12px; color: var(--muted); }
+  .card-meta { font-size: 12px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+  .badge { font-size: 10px; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--border); }
+  .badge.rating { color: var(--star); border-color: var(--border); }
+  .badge.mine { color: var(--accent-2); border-color: var(--border); }
+  .flags { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; }
+  .flag { background: rgba(0,0,0,0.55); border-radius: 6px; padding: 2px 5px; font-size: 12px; }
+  .progress { font-size: 11px; color: var(--accent-2); margin-top: 2px; }
+  .empty { color: var(--muted); text-align: center; padding: 40px 16px; }
+
+  /* Modal */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none;
+    align-items: flex-start; justify-content: center; z-index: 50; padding: 3dvh 16px; overflow-y: auto;
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    width: 100%; max-width: 520px; padding: 18px; margin: auto;
+    max-height: 92dvh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  @media (max-height: 720px) { .modal { max-height: 96dvh; padding: 12px; } .field { margin-bottom: 7px; } }
+  .modal h2 { margin: 0 0 12px; font-size: 17px; }
+  .field { margin-bottom: 9px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .row-inline { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .check { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); cursor: pointer; }
+  .check input { width: auto; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; flex-wrap: wrap; }
+  .autofill-note { font-size: 12px; color: var(--muted); margin-top: 6px; min-height: 16px; }
+  textarea { resize: vertical; min-height: 44px; }
+
+  .fab {
+    position: fixed; right: 18px; bottom: 18px; z-index: 40;
+    background: var(--accent); color: white; border: none; border-radius: 999px;
+    width: 58px; height: 58px; font-size: 30px; cursor: pointer; box-shadow: 0 6px 20px rgba(124,92,255,0.5);
+  }
+  .fab:hover { filter: brightness(1.08); }
+
+  .banner {
+    background: var(--panel-2); border: 1px solid var(--border); border-left: 3px solid var(--warn);
+    border-radius: 10px; padding: 10px 12px; margin: 0 16px 14px; font-size: 13px; color: var(--muted);
+  }
+  .banner b { color: var(--text); }
+  .banner a { color: var(--accent-2); }
+
+  @media (max-width: 520px) {
+    .cards { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+    .grid2 { grid-template-columns: 1fr; }
+  }
+
+  /* Lock screen */
+  .lock {
+    position: fixed; inset: 0; background: var(--bg); z-index: 100;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .lock.open { display: flex; }
+  .lock-box { text-align: center; max-width: 340px; width: 100%; }
+  .lock-box .icon { font-size: 48px; margin-bottom: 12px; }
+  .lock-box h2 { margin: 0 0 6px; }
+  .lock-box p { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+  .lock-box input { text-align: center; margin-bottom: 12px; }
+  .lock-err { color: var(--danger); font-size: 13px; min-height: 18px; }
+
+  /* Stats */
+  .stats-wrap { padding: 0 16px; }
+  .stat-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .stat-num { font-size: 28px; font-weight: 700; color: var(--accent-2); }
+  .stat-lbl { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .stat-section h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 18px 0 10px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; font-size: 13px; }
+  .bar-label { width: 120px; flex: none; color: var(--muted); }
+  .bar-track { flex: 1; background: var(--panel-2); border-radius: 6px; height: 14px; overflow: hidden; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+  .bar-val { width: 34px; flex: none; text-align: right; }
+
+  .release-badge { color: var(--warn); border-color: var(--border); }
+  .bulk-hint { font-size: 12px; color: var(--muted); margin: 6px 0; }
+
+  /* View mode: hide edit-only controls until unlocked */
+  body:not(.can-edit) .edit-only { display: none !important; }
+  /* Admin-only power tools: shown only in admin mode (which requires being logged in) */
+  body:not(.admin) .admin-only { display: none !important; }
+  .viewbadge { font-size: 11px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; }
+  body.can-edit #viewBadge { display: none; }
+
+  /* Card size variants (applied on .cards) */
+  .cards.size-small  { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+  .cards.size-medium { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+  .cards.size-large  { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+  .cards.size-small .card-title { font-size: 12px; }
+  .cards.size-small .card-meta, .cards.size-small .card-ru { font-size: 10px; }
+  .cards.size-large .card-title { font-size: 16px; }
+
+  /* List view */
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .row {
+    display: flex; align-items: center; gap: 12px; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; cursor: pointer;
+  }
+  .row:hover { border-color: var(--accent); }
+  .row-poster { width: 40px; height: 60px; flex: none; border-radius: 5px; object-fit: cover; background: var(--panel-2); }
+  .row-poster.ph { display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--muted); }
+  .row-main { flex: 1; min-width: 0; }
+  .row-title { font-weight: 600; font-size: 14px; }
+  .row-sub { font-size: 12px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; margin-top: 3px; }
+  .row-flags { flex: none; display: flex; gap: 4px; font-size: 14px; }
+  .list.size-compact .row { padding: 5px 10px; }
+  .list.size-compact .row-poster { width: 28px; height: 42px; }
+  .list.size-compact .row-sub { display: none; }
+  .list.size-roomy .row { padding: 12px 14px; }
+  .list.size-roomy .row-poster { width: 54px; height: 80px; }
+
+  .view-controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seg button { background: var(--panel); border: none; padding: 6px 10px; cursor: pointer; color: var(--muted); font-size: 12px; }
+  .seg button.on { background: var(--accent); color: #fff; }
+</style>
+</head>
+<body>
+<div id="grain"></div>
+
+<!-- Unlock-to-edit prompt (overlay, not a full gate) -->
+<div class="overlay" id="lockScreen">
+  <div class="modal" style="max-width:360px; text-align:center">
+    <div style="font-size:44px; margin-bottom:8px">🔓</div>
+    <h2 style="justify-content:center">Unlock to edit</h2>
+    <p style="color:var(--muted); font-size:13px; margin:0 0 14px">Enter your password to turn on editing. Viewing stays open to everyone.</p>
+    <input type="password" id="lockInput" placeholder="Password" style="text-align:center; margin-bottom:12px" />
+    <div class="lock-err" id="lockErr" style="margin-bottom:10px"></div>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn" id="lockCancelBtn">Cancel</button>
+      <button class="btn primary" id="lockUnlock">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<div id="syncFlash"></div>
+
+<header>
+  <div class="top-row">
+    <span class="sync-dot" id="syncDot" title="Sync status"></span>
+    <h1>My Tracker</h1>
+    <span class="viewbadge" id="viewBadge">👁 View only</span>
+    <span class="seg" id="langSeg" style="margin-left:8px">
+      <button data-lang="both">Both</button>
+      <button data-lang="en">EN</button>
+      <button data-lang="ru">RU</button>
+    </span>
+    <span class="spacer"></span>
+    <span style="position:relative">
+      <button class="btn small" id="themeBtn" title="Theme">🎨 Theme</button>
+      <div id="themeMenu" style="display:none;position:absolute;right:0;top:36px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:6px;z-index:30;min-width:180px">
+        <button class="btn small" data-theme="dark" style="width:100%;text-align:left;border:none;background:none">🌙 Dark</button>
+        <button class="btn small" data-theme="light" style="width:100%;text-align:left;border:none;background:none">☀️ Light</button>
+        <button class="btn small" data-theme="sepia" style="width:100%;text-align:left;border:none;background:none">🍂 Autumn</button>
+        <button class="btn small" data-theme="rainy" style="width:100%;text-align:left;border:none;background:none">🌧️ Rainy Day</button>
+        <button class="btn small" data-theme="crimson" style="width:100%;text-align:left;border:none;background:none">🥀 Bruised Crimson</button>
+        <button class="btn small" data-theme="melancholic" style="width:100%;text-align:left;border:none;background:none">🔮 Electric Purple</button>
+      </div>
+    </span>
+    <button class="btn small" id="unlockEditBtn">🔓 Unlock to edit</button>
+    <button class="btn small edit-only" id="adminBtn">⚙ Admin mode</button>
+    <button class="btn small edit-only admin-only" id="selectBtn">☑ Select</button>
+    <span class="edit-only" style="position:relative">
+      <button class="btn small primary" id="addBtnMenu">➕ Add ▾</button>
+      <div id="addMenu" style="display:none;position:absolute;left:0;top:36px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:6px;z-index:30;min-width:180px">
+        <button class="btn small" id="bulkBtn" style="width:100%;text-align:left;border:none;background:none">＋ Bulk add (titles)</button>
+        <button class="btn small" id="noteBtn" style="width:100%;text-align:left;border:none;background:none">📥 Import note</button>
+        <button class="btn small" id="booksBtn" style="width:100%;text-align:left;border:none;background:none">📚 Import books</button>
+        <button class="btn small" id="importBtn" style="width:100%;text-align:left;border:none;background:none">📂 Import file (backup)</button>
+      </div>
+    </span>
+    <button class="btn small edit-only admin-only" id="fetchAllBtn">🎬 Fetch all posters</button>
+    <button class="btn small edit-only admin-only" id="dupeBtn">🔁 Find duplicates</button>
+    <button class="btn small edit-only admin-only" id="syncBtn">☁ Sync setup</button>
+    <button class="btn small" id="exportBtn">Export</button>
+    <span class="edit-only" style="position:relative">
+      <button class="btn small" id="moreBtn">⋯</button>
+      <div id="moreMenu" style="display:none;position:absolute;right:0;top:36px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:6px;z-index:30;min-width:160px">
+        <button class="btn small" id="clearAllBtn" style="color:var(--danger);width:100%;text-align:left;border:none;background:none">🗑 Clear all</button>
+      </div>
+    </span>
+  </div>
+  <div class="tabs" id="tabs"></div>
+</header>
+
+<div id="bulkBar" style="display:none">
+  <span id="bulkCount">0 selected</span>
+  <button class="btn small" id="bulkStatusBtn">Change status</button>
+  <button class="btn small" id="bulkPosterBtn">Set poster URL</button>
+  <button class="btn small" id="bulkFetchBtn">Fetch info + verify</button>
+  <button class="btn small" id="bulkDeleteBtn" style="color:var(--danger)">Delete</button>
+  <button class="btn small" id="bulkClearBtn">Clear selection</button>
+</div>
+
+<div id="syncBanner" class="banner" style="display:none">
+  <b>Sync is off — data is saved on this device only.</b> To share your list between laptop and phone,
+  click <b>☁ Sync setup</b> and paste your two Supabase values. I'll walk you through getting them.
+</div>
+
+<div class="toolbar">
+  <div class="search"><input type="text" id="search" placeholder="Search titles, genres, notes…" /></div>
+  <select id="sortSel" style="width:auto">
+    <option value="custom">✋ Custom (drag to arrange)</option>
+    <option value="added">Newest added</option>
+    <option value="priority">🔺 Priority first</option>
+    <option value="title">Title A–Z</option>
+    <option value="year">Year</option>
+    <option value="my_rating">My rating</option>
+    <option value="imdb_rating">IMDb rating</option>
+  </select>
+  <label class="check"><input type="checkbox" id="favOnly" /> ⭐ Favourites</label>
+  <label class="check"><input type="checkbox" id="recOnly" /> 👍 Recommended</label>
+  <label class="check"><input type="checkbox" id="priOnly" /> 🔺 Priority</label>
+  <div class="view-controls">
+    <span class="seg" id="viewModeSeg">
+      <button data-mode="cards">▦ Cards</button>
+      <button data-mode="list">☰ List</button>
+    </span>
+    <span class="seg" id="sizeSeg"></span>
+  </div>
+</div>
+
+<div class="status-groups" id="groups"></div>
+<div class="stats-wrap" id="statsWrap" style="display:none"></div>
+
+<button class="fab edit-only" id="addBtn" title="Add item">+</button>
+
+<!-- Item editor modal -->
+<div class="overlay" id="editorOverlay">
+  <div class="modal">
+    <h2 id="editorTitle">Add item</h2>
+
+    <div class="field">
+      <label>Category</label>
+      <select id="f_category"></select>
+    </div>
+
+    <div class="field">
+      <label>🔎 Search (type EN or RU, then Auto-fill)</label>
+      <input type="text" id="f_search" placeholder="e.g. Spirited Away / Унесённые призраками" />
+      <div class="autofill-note" id="autofillNote"></div>
+      <div id="searchResults" style="display:none; max-height:230px; overflow:auto; border:1px solid var(--border); border-radius:8px; margin-top:6px"></div>
+    </div>
+
+    <div class="field">
+      <label>Title (English)</label>
+      <input type="text" id="f_title" placeholder="English title" />
+    </div>
+
+    <div class="field">
+      <label>Title (Russian)</label>
+      <input type="text" id="f_title_ru" placeholder="Название по-русски" />
+    </div>
+
+    <div class="grid2">
+      <div class="field">
+        <label>Status</label>
+        <select id="f_status"></select>
+      </div>
+      <div class="field">
+        <label>Type</label>
+        <select id="f_type"></select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Poster image URL</label>
+      <input type="url" id="f_poster" placeholder="https://…" />
+    </div>
+
+    <div class="grid2">
+      <div class="field"><label>Year</label><input type="number" id="f_year" placeholder="YYYY" /></div>
+      <div class="field"><label>IMDb rating</label><input type="text" id="f_imdb_rating" placeholder="e.g. 8.6 or -" /></div>
+    </div>
+
+    <div class="field"><label>IMDb genre</label><input type="text" id="f_imdb_genre" placeholder="e.g. Animation, Adventure" /></div>
+
+    <div class="field" id="authorField" style="display:none">
+      <label>Author</label>
+      <input type="text" id="f_author" placeholder="e.g. Fyodor Dostoevsky" />
+    </div>
+
+    <div class="grid2">
+      <div class="field"><label>My genre</label><input type="text" id="f_my_genre" placeholder="how you'd categorise it" /></div>
+      <div class="field"><label>My rating (/10)</label><input type="number" id="f_my_rating" min="0" max="10" step="0.5" placeholder="0–10" /></div>
+    </div>
+
+    <div class="field" id="progressField">
+      <label id="progressLabel">Progress (episode / chapter / page)</label>
+      <input type="text" id="f_progress" placeholder="e.g. 8/12 or chapter 45" />
+    </div>
+
+    <div class="field" id="releaseField" style="display:none">
+      <label>Release date <span style="color:var(--muted)">(for "To be released" — leave blank if unsure)</span></label>
+      <div class="row-inline">
+        <input type="date" id="f_release_date" style="max-width:200px" />
+        <label class="check"><input type="checkbox" id="f_release_sure" /> Date is confirmed</label>
+      </div>
+    </div>
+
+    <div class="row-inline" style="margin-bottom:12px">
+      <label class="check"><input type="checkbox" id="f_favourite" /> ⭐ Favourite</label>
+      <label class="check"><input type="checkbox" id="f_recommend" /> 👍 Recommend</label>
+      <label class="check"><input type="checkbox" id="f_priority" /> 🔺 Priority next</label>
+    </div>
+
+    <div class="field"><label>Description (English) <span style="color:var(--muted)">(over the blurred poster)</span></label><textarea id="f_description" placeholder="short synopsis…"></textarea></div>
+    <div class="field"><label>Description (Russian)</label><textarea id="f_description_ru" placeholder="краткое описание…"></textarea></div>
+    <div class="field"><label>Notes</label><textarea id="f_notes" placeholder="your thoughts…"></textarea></div>
+
+    <div class="modal-actions">
+      <button class="btn ghost" id="deleteBtn" style="margin-right:auto; display:none; color:var(--danger)">Delete</button>
+      <button class="btn" id="cancelBtn">Cancel</button>
+      <button class="btn primary" id="saveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sync setup modal -->
+<div class="overlay" id="syncOverlay">
+  <div class="modal">
+    <h2>Cloud sync setup (Supabase)</h2>
+    <p style="color:var(--muted); font-size:13px; line-height:1.5">
+      This lets your laptop and phone share the same list. One-time setup, free.
+      <br><br>
+      <b>Steps:</b><br>
+      1. Go to <a href="https://supabase.com" target="_blank" style="color:var(--accent-2)">supabase.com</a>, create a free account and a new project.<br>
+      2. In your project: open <b>Project Settings → API</b>. Copy the <b>Project URL</b> and the <b>anon public</b> key.<br>
+      3. In the <b>SQL Editor</b>, run the setup snippet (ask me in chat and I'll give you the exact SQL to paste).<br>
+      4. Paste the two values below and click Connect. Do this once on each device.
+    </p>
+    <div class="field"><label>Supabase Project URL</label><input type="url" id="s_url" placeholder="https://xxxx.supabase.co" /></div>
+    <div class="field"><label>Supabase anon public key</label><input type="text" id="s_key" placeholder="eyJhbGci…" /></div>
+    <div class="autofill-note" id="syncNote"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="syncDisconnect" style="margin-right:auto; display:none; color:var(--danger)">Disconnect</button>
+      <button class="btn" id="syncCancel">Close</button>
+      <button class="btn primary" id="syncConnect">Connect & sync</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="importFile" accept="application/json" style="display:none" />
+
+<!-- Read-only detail popup (view mode) -->
+<div class="overlay" id="detailOverlay">
+  <div class="modal" id="detailModal" style="max-width:460px"></div>
+</div>
+
+<!-- Books import modal -->
+<div class="overlay" id="booksOverlay">
+  <div class="modal" style="max-width:640px">
+    <h2>Import books</h2>
+    <p style="color:var(--muted); font-size:13px; line-height:1.5">
+      One book per line, in this format (parts separated by <b>|</b>):<br>
+      <code>Status | Title | Author | extras</code><br><br>
+      <b>Status</b> = To read / Reading / Read. <b>extras</b> is optional: put <code>fav</code> for favourite, or a progress note like <code>ch 120</code>.
+      <br>Example:<br>
+      <code>To read | Wuthering Heights | Emily Brontë</code><br>
+      <code>Read | Норвежский лес | Харуки Мураками | fav</code><br>
+      <code>Reading | 1984 | George Orwell | ch 120</code>
+    </p>
+    <div class="field">
+      <label>Paste your books</label>
+      <textarea id="books_text" style="min-height:170px" placeholder="To read | Title | Author&#10;Read | Название | Автор | fav"></textarea>
+    </div>
+    <div class="bulk-hint" id="booksProgress"></div>
+    <div class="modal-actions">
+      <button class="btn" id="booksCancel">Cancel</button>
+      <button class="btn primary" id="booksAdd">Add books</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fetch-all-from-IMDb modal -->
+<div class="overlay" id="fetchOverlay">
+  <div class="modal">
+    <h2>Fetch posters &amp; details</h2>
+    <p style="color:var(--muted); font-size:13px; line-height:1.5">
+      This fills in poster, year, rating and genre for titles that don't have them yet, picking the right source automatically:
+      <b>AniList</b> for anime &amp; manga, <b>TMDB</b> for movies &amp; TV (with Russian titles), and <b>Open Library</b> for books.
+      <br><br>
+      <b>All three are free with no daily limit</b>, so you can fetch your whole library in one go — no more running out of credits.
+      Titles it can't match are left as-is; you can fix those by hand.
+    </p>
+    <div class="bar-track" style="height:18px; margin-bottom:8px"><span class="bar-fill" id="fetchBar" style="width:0%"></span></div>
+    <div class="bulk-hint" id="fetchProgress">Ready.</div>
+    <div class="modal-actions">
+      <button class="btn" id="fetchClose">Close</button>
+      <button class="btn" id="fetchStop" style="display:none; color:var(--danger)">Stop</button>
+      <button class="btn primary" id="fetchStart">Start fetching</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk import modal -->
+<div class="overlay" id="bulkOverlay">
+  <div class="modal">
+    <h2>Bulk add from a list</h2>
+    <p style="color:var(--muted); font-size:13px; line-height:1.5">
+      Paste one title per line. I'll look each up on IMDb and add it with poster, year, rating and genre filled in automatically. You can edit any of them afterwards.
+    </p>
+    <div class="grid2">
+      <div class="field"><label>Add to category</label><select id="bk_category"></select></div>
+      <div class="field"><label>Status</label><select id="bk_status"></select></div>
+    </div>
+    <div class="field">
+      <label>Titles (one per line)</label>
+      <textarea id="bk_titles" style="min-height:130px" placeholder="Inception&#10;Spirited Away&#10;The Matrix"></textarea>
+    </div>
+    <div class="bulk-hint" id="bulkProgress"></div>
+    <div class="modal-actions">
+      <button class="btn" id="bulkCancel">Cancel</button>
+      <button class="btn primary" id="bulkRun">Look up & add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Smart paste-whole-note importer -->
+<div class="overlay" id="noteOverlay">
+  <div class="modal" style="max-width:640px">
+    <h2>Import my whole note</h2>
+    <p style="color:var(--muted); font-size:13px; line-height:1.5">
+      Paste your entire list (all sections, Russian headers and all). I'll sort each title into the right
+      category and status from your headers, mark <b>[x]</b> items as ⭐ favourite (in watched/read sections)
+      or 🔺 priority (in to-watch sections), pull manga chapter numbers into progress, and keep your inline notes.
+      You'll see a summary before anything is added.
+    </p>
+    <div class="field">
+      <label>Paste your note here</label>
+      <textarea id="note_text" style="min-height:200px" placeholder="Книги и Стихи&#10;Прочитать:&#10;  Грозовой перевал&#10;  ..."></textarea>
+    </div>
+    <div class="bulk-hint" id="noteProgress"></div>
+    <div id="notePreview" style="max-height:220px; overflow:auto; font-size:13px; margin-bottom:10px"></div>
+    <div class="modal-actions">
+      <button class="btn" id="noteCancel">Cancel</button>
+      <button class="btn" id="notePreviewBtn">Preview</button>
+      <button class="btn primary" id="noteCommit" style="display:none">Add all to tracker</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   My Tracker — single-file app
+   Storage: localStorage always; Supabase optional for cross-device sync.
+   OMDb auto-fill: uses the user's key below.
+   ============================================================ */
+
+const OMDB_KEY = "d9dc9390";
+const TMDB_KEY = "3553c8f5fde257910b4bd57aae3b1401";
+const GBOOKS_KEY = "AIzaSyAjwiey7H6Dq0KIcIVcR0STzg9scC1KR7Q";
+
+/* ---- Category & status model ---- */
+const CATEGORIES = {
+  movies: {
+    label: "Movies",
+    statuses: ["In theatres / soon", "To watch", "Watched", "Rewatch"],
+    progress: false
+  },
+  tv: {
+    label: "TV series",
+    statuses: ["To watch", "Watching", "Ongoing", "Finish watching", "To be released", "Watched", "Rewatch"],
+    progress: true, progressLabel: "Progress (season / episode, e.g. S2E4)"
+  },
+  anime: {
+    label: "Anime",
+    statuses: ["To watch", "Watching", "Ongoing", "Finish watching", "To be released", "Watched", "Rewatch"],
+    progress: true, progressLabel: "Progress (episode, e.g. 8/12)"
+  },
+  manga: {
+    label: "Manga",
+    statuses: ["To read", "Reading", "Ongoing", "Finished", "Dropped"],
+    progress: true, progressLabel: "Where I stopped (chapter / page)"
+  },
+  books: {
+    label: "Books & Poems",
+    statuses: ["To read", "Reading", "Read"],
+    progress: true, progressLabel: "Where I stopped (page / chapter)"
+  }
+};
+const CAT_KEYS = Object.keys(CATEGORIES);
+
+/* ---- Custom category & status ordering (admin-arrangeable) ---- */
+const CATORDER_KEY = "myTracker.catOrder.v1";
+const STORDER_KEY = "myTracker.statusOrder.v1";
+function orderedCatKeys() {
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem(CATORDER_KEY) || "[]"); } catch {}
+  const valid = saved.filter(k => CATEGORIES[k]);
+  CAT_KEYS.forEach(k => { if (!valid.includes(k)) valid.push(k); });
+  return valid;
+}
+function saveCatOrder(arr) { localStorage.setItem(CATORDER_KEY, JSON.stringify(arr)); }
+function orderedStatuses(catKey) {
+  const base = CATEGORIES[catKey].statuses;
+  let map = {};
+  try { map = JSON.parse(localStorage.getItem(STORDER_KEY) || "{}"); } catch {}
+  const saved = (map[catKey] || []).filter(s => base.includes(s));
+  base.forEach(s => { if (!saved.includes(s)) saved.push(s); });
+  return saved;
+}
+function saveStatusOrder(catKey, arr) {
+  let map = {};
+  try { map = JSON.parse(localStorage.getItem(STORDER_KEY) || "{}"); } catch {}
+  map[catKey] = arr;
+  localStorage.setItem(STORDER_KEY, JSON.stringify(map));
+}
+
+/* ---- Language display + note translation ---- */
+const LANG_KEY = "myTracker.lang.v1";
+const TRCACHE_KEY = "myTracker.trcache.v1";
+let trCache = {};
+function loadLang() { const v = localStorage.getItem(LANG_KEY); if (v) state.lang = v; try { trCache = JSON.parse(localStorage.getItem(TRCACHE_KEY) || "{}"); } catch { trCache = {}; } }
+function saveLang() { localStorage.setItem(LANG_KEY, state.lang); }
+function renderLangSeg() {
+  document.querySelectorAll("#langSeg button").forEach(b => { b.className = b.dataset.lang === state.lang ? "on" : ""; });
+}
+function displayTitle(it) {
+  if (state.lang === "ru") return it.title_ru || it.title || "";
+  if (state.lang === "en") return it.title || it.title_ru || "";
+  // Both mode: primary = the language this item was entered/searched in
+  if (it.primary_lang === "ru") return it.title_ru || it.title || "";
+  return it.title || it.title_ru || "";
+}
+function displaySubtitle(it) {
+  if (state.lang !== "both") return "";
+  const primaryRu = it.primary_lang === "ru";
+  const other = primaryRu ? it.title : it.title_ru;
+  const prim = primaryRu ? it.title_ru : it.title;
+  return (other && other !== prim) ? other : "";
+}
+function displayDescription(it) {
+  if (state.lang === "ru") return it.description_ru || it.description || "";
+  return it.description || it.description_ru || ""; // en + both
+}
+
+/* ---- Genre translation (fixed vocabulary, instant, no API) ---- */
+const GENRE_RU = {
+  "action": "Боевик", "adventure": "Приключения", "animation": "Анимация", "comedy": "Комедия",
+  "crime": "Криминал", "documentary": "Документальный", "drama": "Драма", "family": "Семейный",
+  "fantasy": "Фэнтези", "history": "История", "horror": "Ужасы", "music": "Музыка",
+  "mystery": "Детектив", "romance": "Романтика", "science fiction": "Фантастика", "sci-fi": "Фантастика",
+  "sci fi": "Фантастика", "thriller": "Триллер", "war": "Военный", "western": "Вестерн",
+  "supernatural": "Сверхъестественное", "slice of life": "Повседневность", "sports": "Спорт",
+  "psychological": "Психологический", "mecha": "Меха", "ecchi": "Этти", "biography": "Биография",
+  "musical": "Мюзикл", "reality": "Реалити", "news": "Новости", "kids": "Детский", "tv movie": "Телефильм"
+};
+const GENRE_EN = Object.fromEntries(Object.entries(GENRE_RU).map(([e, r]) => [r.toLowerCase(), e.replace(/\b\w/g, c => c.toUpperCase())]));
+function translateGenreString(g) {
+  if (!g) return g;
+  const parts = g.split(/[,/]/).map(s => s.trim()).filter(Boolean);
+  if (state.lang === "ru") {
+    return parts.map(p => GENRE_RU[p.toLowerCase()] || p).join(", ");
+  }
+  if (state.lang === "en") {
+    return parts.map(p => GENRE_EN[p.toLowerCase()] || p).join(", ");
+  }
+  return g;
+}
+// Free, no-key translation via MyMemory. Cached. Returns original on failure.
+async function translateText(text, from, to) {
+  if (!text) return text;
+  const ck = from + ">" + to + ":" + text;
+  if (trCache[ck]) return trCache[ck];
+  try {
+    const r = await fetch("https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text.slice(0, 480)) + "&langpair=" + from + "|" + to);
+    const j = await r.json();
+    const out = j && j.responseData && j.responseData.translatedText;
+    if (out) { trCache[ck] = out; try { localStorage.setItem(TRCACHE_KEY, JSON.stringify(trCache)); } catch {} return out; }
+  } catch {}
+  return text + "  (translation unavailable)";
+}
+// Ensure an item has BOTH descriptions: translate whichever exists to fill the gap.
+async function fillMissingDescriptions(it) {
+  const en = (it.description || "").trim();
+  const ru = (it.description_ru || "").trim();
+  if (en && !ru) { const t = await translateText(en, "en", "ru"); if (t && !/translation unavailable/.test(t)) it.description_ru = t; }
+  else if (ru && !en) { const t = await translateText(ru, "ru", "en"); if (t && !/translation unavailable/.test(t)) it.description = t; }
+}
+
+let state = { items: [], activeCat: "movies", filter: "", sort: "custom", favOnly: false, recOnly: false, priOnly: false, showStats: false,
+  viewMode: "cards", cardSize: "medium", listSize: "normal", lang: "both", selectMode: false, selected: {} };
+let editingId = null;
+
+const VIEW_KEY = "myTracker.view.v1";
+function loadView() {
+  try {
+    const v = JSON.parse(localStorage.getItem(VIEW_KEY) || "null");
+    if (v) { state.viewMode = v.viewMode || "cards"; state.cardSize = v.cardSize || "medium"; state.listSize = v.listSize || "normal"; }
+  } catch {}
+}
+function saveView() {
+  localStorage.setItem(VIEW_KEY, JSON.stringify({ viewMode: state.viewMode, cardSize: state.cardSize, listSize: state.listSize }));
+}
+const CARD_SIZES = [["small", "S"], ["medium", "M"], ["large", "L"]];
+const LIST_SIZES = [["compact", "Compact"], ["normal", "Normal"], ["roomy", "Roomy"]];
+
+/* ---- Storage layer ---- */
+const LS_KEY = "myTracker.items.v1";
+const SYNC_KEY = "myTracker.supabase.v1";
+const LOCK_KEY = "myTracker.lock.v1";
+let supa = null; // {url, key}
+// Baked-in shared cloud so ANY visitor auto-loads the list (editing still needs the password).
+const DEFAULT_SUPA = { url: "https://qkcvxpktejjpjwgpbgzj.supabase.co", key: "sb_publishable_bbrkHHxDrw-icA6-K32zeQ_0Jyu_Q4D" };
+
+/* ---- Edit-mode password (view is always open; editing needs the ONE shared password) ---- */
+/* Baked-in shared password hash (SHA-256 of "myTracker::" + password).
+   Same for every device: everyone starts view-only and must enter the password to edit.
+   Note: a public web page can't truly hide this — it's a "keep honest people out" lock. */
+const SHARED_PW_HASH = "f94e734b732dcb4782896728a69d29a62755315fe73cae943faa0277cbf7a1f4";
+const UNLOCK_UNTIL_KEY = "myTracker.unlockUntil.v1";
+let canEdit = false;
+let adminMode = false;
+function withinUnlockGrace() {
+  const t = parseInt(localStorage.getItem(UNLOCK_UNTIL_KEY) || "0", 10);
+  return Date.now() < t;
+}
+async function hashPw(pw) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("myTracker::" + pw));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+function applyEditMode() {
+  document.body.classList.toggle("can-edit", canEdit);
+  if (!canEdit) adminMode = false;
+  document.body.classList.toggle("admin", canEdit && adminMode);
+  updateAdminButton();
+}
+function toggleAdmin() {
+  if (!canEdit) return;
+  adminMode = !adminMode;
+  if (!adminMode) { state.selectMode = false; state.selected = {}; const bar = document.getElementById("bulkBar"); if (bar) bar.style.display = "none"; const sb = document.getElementById("selectBtn"); if (sb) sb.textContent = "☑ Select"; }
+  document.body.classList.toggle("admin", adminMode);
+  updateAdminButton();
+  renderTabs(); renderGroups();
+}
+function updateAdminButton() {
+  const b = document.getElementById("adminBtn");
+  if (b) b.textContent = adminMode ? "⚙ Admin: ON" : "⚙ Admin mode";
+}
+function requestEdit() {
+  if (canEdit) { // toggle back to view-only, and clear the grace so it re-asks next time
+    canEdit = false; localStorage.removeItem(UNLOCK_UNTIL_KEY); applyEditMode(); return;
+  }
+  if (withinUnlockGrace()) { canEdit = true; applyEditMode(); return; } // still within 15 min — no prompt
+  const screen = document.getElementById("lockScreen");
+  document.getElementById("lockErr").textContent = "";
+  document.getElementById("lockInput").value = "";
+  screen.classList.add("open");
+  setTimeout(() => document.getElementById("lockInput").focus(), 50);
+  const tryUnlock = async () => {
+    const h = await hashPw(document.getElementById("lockInput").value);
+    if (h === SHARED_PW_HASH) { canEdit = true; localStorage.setItem(UNLOCK_UNTIL_KEY, String(Date.now() + 15 * 60 * 1000)); applyEditMode(); screen.classList.remove("open"); updateEditButton(); }
+    else { document.getElementById("lockErr").textContent = "Wrong password."; document.getElementById("lockInput").value = ""; }
+  };
+  document.getElementById("lockUnlock").onclick = tryUnlock;
+  document.getElementById("lockInput").onkeydown = e => { if (e.key === "Enter") tryUnlock(); };
+  document.getElementById("lockCancelBtn").onclick = () => screen.classList.remove("open");
+}
+function updateEditButton() {
+  const b = document.getElementById("unlockEditBtn");
+  if (!b) return;
+  b.textContent = canEdit ? "🔒 Lock editing" : "🔓 Unlock to edit";
+}
+
+function loadLocal() {
+  try { state.items = JSON.parse(localStorage.getItem(LS_KEY) || "[]"); }
+  catch { state.items = []; }
+  try { supa = JSON.parse(localStorage.getItem(SYNC_KEY) || "null"); } catch { supa = null; }
+  if (!supa && DEFAULT_SUPA && DEFAULT_SUPA.url) supa = DEFAULT_SUPA; // auto-connect every device to the shared cloud
+}
+function saveLocal() { localStorage.setItem(LS_KEY, JSON.stringify(state.items)); }
+
+/* ---- Supabase REST helpers (no SDK needed) ---- */
+function supaHeaders() {
+  return { apikey: supa.key, Authorization: "Bearer " + supa.key, "Content-Type": "application/json" };
+}
+async function supaPull() {
+  if (!supa) return;
+  const r = await fetch(supa.url + "/rest/v1/items?select=*", { headers: supaHeaders() });
+  if (!r.ok) throw new Error("pull " + r.status);
+  const rows = await r.json();
+  // rows store {id, data(jsonb)}; unwrap
+  state.items = rows.map(row => ({ ...row.data, id: row.id }));
+  saveLocal();
+}
+async function supaUpsert(item) {
+  if (!supa) return;
+  const body = [{ id: item.id, data: item }];
+  const r = await fetch(supa.url + "/rest/v1/items?on_conflict=id", {
+    method: "POST",
+    headers: { ...supaHeaders(), Prefer: "resolution=merge-duplicates" },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error("upsert " + r.status);
+}
+async function supaDelete(id) {
+  if (!supa) return;
+  const r = await fetch(supa.url + "/rest/v1/items?id=eq." + encodeURIComponent(id), {
+    method: "DELETE", headers: supaHeaders()
+  });
+  if (!r.ok) throw new Error("delete " + r.status);
+}
+function setSyncDot(kind) {
+  const d = document.getElementById("syncDot");
+  d.className = "sync-dot" + (kind === "on" ? " on" : kind === "err" ? " err" : "");
+  d.title = kind === "on" ? "Synced with cloud" : kind === "err" ? "Sync error — using local copy" : "Local only (no sync)";
+}
+let _flashTimer = null;
+function syncFlash(ok) {
+  const el = document.getElementById("syncFlash");
+  if (!el) return;
+  el.textContent = ok ? "Saved ✓" : "Save failed ⚠";
+  el.style.background = ok ? "var(--good)" : "var(--danger)";
+  el.classList.add("show");
+  clearTimeout(_flashTimer);
+  _flashTimer = setTimeout(() => el.classList.remove("show"), 1400);
+}
+
+/* ---- OMDb search + disambiguation + bilingual titles ---- */
+function hasCyrillic(s) { return /[а-яё]/i.test(s); }
+
+/* ---- AniList (anime & manga) — free, no key, GraphQL ---- */
+async function anilistSearch(query, isManga) {
+  const q = `query ($search: String, $type: MediaType) {
+    Page(perPage: 8) { media(search: $search, type: $type) {
+      id title { romaji english native } startDate { year }
+      averageScore genres coverImage { large } description
+      synonyms
+    } } }`;
+  const r = await fetch("https://graphql.anilist.co", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify({ query: q, variables: { search: query, type: isManga ? "MANGA" : "ANIME" } })
+  });
+  if (!r.ok) throw new Error("anilist " + r.status);
+  const j = await r.json();
+  const media = (j.data && j.data.Page && j.data.Page.media) || [];
+  return media.map(m => ({
+    id: m.id,
+    en: m.title.english || m.title.romaji || "",
+    romaji: m.title.romaji || "",
+    native: m.title.native || "",
+    year: m.startDate && m.startDate.year ? String(m.startDate.year) : "",
+    score: m.averageScore ? (m.averageScore / 10).toFixed(1) : "",
+    genres: (m.genres || []).join(", "),
+    poster: (m.coverImage && m.coverImage.large) || "",
+    synonyms: m.synonyms || [],
+    description: (m.description || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim()
+  }));
+}
+
+/* ---- Jikan (MyAnimeList) — free, no key — fallback / supplement to AniList ---- */
+async function jikanSearch(query, isManga) {
+  const kind = isManga ? "manga" : "anime";
+  const r = await fetch("https://api.jikan.moe/v4/" + kind + "?limit=6&q=" + encodeURIComponent(query));
+  if (!r.ok) throw new Error("jikan " + r.status);
+  const j = await r.json();
+  return (j.data || []).map(m => ({
+    id: m.mal_id,
+    en: m.title_english || m.title || "",
+    romaji: m.title || "",
+    native: m.title_japanese || "",
+    year: (m.year ? String(m.year) : (m.published && m.published.prop && m.published.prop.from ? String(m.published.prop.from.year) : "")) || "",
+    score: m.score ? String(m.score) : "",
+    genres: (m.genres || []).map(g => g.name).join(", "),
+    poster: (m.images && m.images.jpg && (m.images.jpg.large_image_url || m.images.jpg.image_url)) || "",
+    synonyms: (m.titles || []).map(t => t.title),
+    description: m.synopsis || ""
+  }));
+}
+
+/* Merged anime/manga search: AniList first, then Jikan (merged, de-duped by title) */
+async function animeSearch(query, isManga) {
+  const out = []; const seen = new Set();
+  const push = c => { if (!c || !(c.en || c.romaji)) return; const k = (c.en || c.romaji).toLowerCase(); if (seen.has(k)) return; seen.add(k); out.push(c); };
+  try { (await anilistSearch(query, isManga)).forEach(push); } catch {}
+  if (out.length < 3) { try { (await jikanSearch(query, isManga)).forEach(push); } catch {} }
+  return out;
+}
+
+/* ---- Open Library (books) — free, no key, no limit ---- */
+async function openLibrarySearch(query, author) {
+  const q = author ? (query + " " + author) : query;
+  const url = "https://openlibrary.org/search.json?limit=1&fields=title,author_name,first_publish_year,cover_i&q=" + encodeURIComponent(q);
+  const r = await fetch(url);
+  if (!r.ok) return null;
+  const j = await r.json();
+  const doc = j.docs && j.docs[0];
+  if (!doc) return null;
+  return {
+    title: doc.title || query,
+    author: (doc.author_name && doc.author_name[0]) || "",
+    year: doc.first_publish_year ? String(doc.first_publish_year) : "",
+    poster: doc.cover_i ? ("https://covers.openlibrary.org/b/id/" + doc.cover_i + "-L.jpg") : ""
+  };
+}
+
+/* ---- Google Books (better Russian coverage) ---- */
+async function googleBooksSearch(query, author, limit) {
+  const q = author ? (query + " " + author) : query;
+  const url = "https://www.googleapis.com/books/v1/volumes?maxResults=" + (limit || 1) + "&country=US&q=" + encodeURIComponent(q) + "&key=" + GBOOKS_KEY;
+  const r = await fetch(url);
+  if (!r.ok) return [];
+  const j = await r.json();
+  return (j.items || []).map(it => {
+    const v = it.volumeInfo || {};
+    let cover = "";
+    if (v.imageLinks) cover = (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail || "").replace(/^http:/, "https:").replace(/&edge=curl/, "");
+    return { title: v.title || query, author: (v.authors || [])[0] || "", year: (v.publishedDate || "").slice(0, 4), poster: cover };
+  });
+}
+
+/* Unified book lookup: Google Books first (best Russian), Open Library fallback.
+   Returns a list of candidates (merged, de-duped by title). */
+async function bookSearch(query, author, many) {
+  const out = [];
+  const seen = new Set();
+  const push = c => { if (!c || !c.title) return; const k = c.title.toLowerCase(); if (seen.has(k)) { // merge missing fields
+      const ex = out.find(x => x.title.toLowerCase() === k); if (ex) { ex.poster = ex.poster || c.poster; ex.author = ex.author || c.author; ex.year = ex.year || c.year; } return; }
+    seen.add(k); out.push(c); };
+  try { (await googleBooksSearch(query, author, many ? 6 : 1)).forEach(push); } catch {}
+  try { const ol = await openLibrarySearch(query, author); if (ol) push(ol); } catch {}
+  return out;
+}
+
+/* ---- TMDB (movies & TV) — has Russian titles + posters ---- */
+const TMDB_IMG = "https://image.tmdb.org/t/p/w342";
+async function tmdbSearch(query, isTV) {
+  const kind = isTV ? "tv" : "movie";
+  const url = "https://api.themoviedb.org/3/search/" + kind + "?api_key=" + TMDB_KEY +
+    "&query=" + encodeURIComponent(query) + "&include_adult=false";
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("tmdb " + r.status);
+  const j = await r.json();
+  return (j.results || []).slice(0, 8).map(m => ({
+    id: m.id, isTV,
+    title: isTV ? m.name : m.title,
+    original: isTV ? m.original_name : m.original_title,
+    year: (isTV ? m.first_air_date : m.release_date || "").slice(0, 4),
+    score: m.vote_average ? m.vote_average.toFixed(1) : "",
+    poster: m.poster_path ? TMDB_IMG + m.poster_path : ""
+  }));
+}
+// fetch a title in a specific language + genre names
+async function tmdbDetails(id, isTV, lang) {
+  const kind = isTV ? "tv" : "movie";
+  const url = "https://api.themoviedb.org/3/" + kind + "/" + id + "?api_key=" + TMDB_KEY + "&language=" + lang;
+  const r = await fetch(url);
+  if (!r.ok) return null;
+  return r.json();
+}
+async function applyTmdb(m) {
+  const note = document.getElementById("autofillNote");
+  note.textContent = "Loading details…";
+  try {
+    const en = await tmdbDetails(m.id, m.isTV, "en-US");
+    const ru = await tmdbDetails(m.id, m.isTV, "ru-RU");
+    if (m.poster) document.getElementById("f_poster").value = m.poster;
+    if (m.year) document.getElementById("f_year").value = m.year;
+    if (m.score) document.getElementById("f_imdb_rating").value = m.score;
+    const genres = en && en.genres ? en.genres.map(g => g.name).join(", ") : "";
+    if (genres) document.getElementById("f_imdb_genre").value = genres;
+    if (en && en.overview && document.getElementById("f_description")) document.getElementById("f_description").value = en.overview;
+    if (ru && ru.overview && document.getElementById("f_description_ru")) document.getElementById("f_description_ru").value = ru.overview;
+    const enTitle = en ? (m.isTV ? en.name : en.title) : m.title;
+    const ruTitle = ru ? (m.isTV ? ru.name : ru.title) : "";
+    const enField = document.getElementById("f_title");
+    const ruField = document.getElementById("f_title_ru");
+    if (enTitle) enField.value = enTitle;
+    // Set the Russian field to the localized title when TMDB actually has a different one.
+    if (ruTitle && ruTitle !== enTitle) ruField.value = ruTitle;
+    else if (!ruField.value || ruField.value === enTitle) ruField.value = ""; // avoid duplicating EN into RU
+    note.textContent = "✓ From TMDB: " + enTitle + (m.year ? " (" + m.year + ")" : "") +
+      (ruField.value ? "  •  RU: " + ruField.value : "  •  (no distinct Russian title on TMDB)");
+  } catch { note.textContent = "Couldn't load that title — fill it in by hand."; }
+}
+
+async function autofill() {
+  const q = (document.getElementById("f_search").value.trim() || document.getElementById("f_title").value.trim());
+  const note = document.getElementById("autofillNote");
+  const box = document.getElementById("searchResults");
+  const cat = document.getElementById("f_category").value;
+  box.style.display = "none"; box.innerHTML = "";
+  if (!q) { note.textContent = "Type a title first."; return; }
+  window._lastSearchLang = hasCyrillic(q) ? "ru" : "en";
+
+  // Route by category: anime & manga -> AniList; everything else -> IMDb (OMDb)
+  if (cat === "anime" || cat === "manga") {
+    note.textContent = "Searching AniList for “" + q + "”…";
+    try {
+      const results = await animeSearch(q, cat === "manga");
+      if (!results.length) { note.textContent = "No AniList match. Try the romaji/English name, or fill it in by hand."; return; }
+      if (results.length === 1) { applyAniList(results[0]); return; }
+      note.textContent = "Several matches — pick the right one:";
+      box.style.display = "block";
+      results.forEach(m => {
+        const row = document.createElement("div");
+        row.className = "row"; row.style.margin = "6px";
+        const poster = m.poster ? '<img class="row-poster" src="' + escapeAttr(m.poster) + '" onerror="this.replaceWith(makeRowPh())" />' : '<div class="row-poster ph">🎬</div>';
+        row.innerHTML = poster + '<div class="row-main"><div class="row-title">' + escapeHtml(m.en || m.romaji) +
+          '</div><div class="row-sub"><span>' + escapeHtml(m.native) + '</span><span>' + escapeHtml(m.year) + '</span>' +
+          (m.score ? '<span>★ ' + escapeHtml(m.score) + '</span>' : '') + '</div></div>';
+        row.onclick = () => { box.style.display = "none"; applyAniList(m); };
+        box.appendChild(row);
+      });
+    } catch { note.textContent = "Couldn't reach AniList right now — try again, or fill it in by hand."; }
+    return;
+  }
+
+  // Movies / TV -> TMDB (handles Russian queries + Russian titles); Books -> IMDb
+  if (cat === "movies" || cat === "tv") {
+    note.textContent = "Searching TMDB for “" + q + "”…";
+    try {
+      const results = await tmdbSearch(q, cat === "tv");
+      if (!results.length) { note.textContent = "No TMDB match. Try a different spelling, or fill it in by hand."; return; }
+      if (results.length === 1) { await applyTmdb(results[0]); return; }
+      note.textContent = "Several matches — pick the right one:";
+      box.style.display = "block";
+      results.forEach(m => {
+        const row = document.createElement("div");
+        row.className = "row"; row.style.margin = "6px";
+        const poster = m.poster ? '<img class="row-poster" src="' + escapeAttr(m.poster) + '" onerror="this.replaceWith(makeRowPh())" />' : '<div class="row-poster ph">🎬</div>';
+        row.innerHTML = poster + '<div class="row-main"><div class="row-title">' + escapeHtml(m.title) +
+          '</div><div class="row-sub"><span>' + escapeHtml(m.original || "") + '</span><span>' + escapeHtml(m.year || "") + '</span>' +
+          (m.score ? '<span>★ ' + escapeHtml(m.score) + '</span>' : '') + '</div></div>';
+        row.onclick = () => { box.style.display = "none"; applyTmdb(m); };
+        box.appendChild(row);
+      });
+    } catch { note.textContent = "Couldn't reach TMDB right now — try again, or fill it in by hand."; }
+    return;
+  }
+
+  // Books -> IMDb (OMDb)
+  note.textContent = "Searching books for “" + q + "”…";
+  try {
+    const authorVal = (document.getElementById("f_author") ? document.getElementById("f_author").value.trim() : "");
+    const docs = await bookSearch(q, authorVal, true);
+    if (!docs.length) { note.textContent = "No book match for “" + q + "”. Fill it in by hand."; return; }
+    const pick = (d) => {
+      if (d.poster) document.getElementById("f_poster").value = d.poster;
+      if (d.year) document.getElementById("f_year").value = d.year;
+      document.getElementById("f_title").value = d.title;
+      if (d.author && document.getElementById("f_author") && !document.getElementById("f_author").value) document.getElementById("f_author").value = d.author;
+      note.textContent = "✓ Found: " + d.title + (d.author ? " — " + d.author : "") + (d.year ? " (" + d.year + ")" : "");
+    };
+    if (docs.length === 1) { pick(docs[0]); return; }
+    note.textContent = "Several matches — pick the right one:";
+    box.style.display = "block";
+    docs.forEach(d => {
+      const row = document.createElement("div");
+      row.className = "row"; row.style.margin = "6px";
+      const poster = d.poster
+        ? '<img class="row-poster" src="' + escapeAttr(d.poster) + '" onerror="this.replaceWith(makeRowPh())" />'
+        : '<div class="row-poster ph">📖</div>';
+      row.innerHTML = poster + '<div class="row-main"><div class="row-title">' + escapeHtml(d.title) +
+        '</div><div class="row-sub"><span>' + escapeHtml(d.author || "") + '</span><span>' + escapeHtml(d.year || "") + '</span></div></div>';
+      row.onclick = () => { box.style.display = "none"; pick(d); };
+      box.appendChild(row);
+    });
+  } catch (e) {
+    note.textContent = "Couldn't reach the book services right now. Fill it in by hand.";
+  }
+}
+
+async function applyAniList(m) {
+  const note = document.getElementById("autofillNote");
+  if (m.poster) document.getElementById("f_poster").value = m.poster;
+  if (m.year) document.getElementById("f_year").value = m.year;
+  if (m.score) document.getElementById("f_imdb_rating").value = m.score;   // reuse rating field (AniList score /10)
+  if (m.genres) document.getElementById("f_imdb_genre").value = m.genres;
+  if (!document.getElementById("f_type").value) document.getElementById("f_type").value = "animation";
+  const enField = document.getElementById("f_title");
+  const ruField = document.getElementById("f_title_ru");
+  if (m.en || m.romaji) enField.value = m.en || m.romaji;
+  note.textContent = "✓ From AniList: " + (m.en || m.romaji) + (m.native ? " (" + m.native + ")" : "") + (m.year ? " " + m.year : "") + " — looking up Russian title…";
+  // best-effort Russian title from Wikidata (by the English/romaji name)
+  if (!ruField.value) {
+    const ru = await wikidataRuTitle(m.en || m.romaji);
+    if (ru) { ruField.value = ru; note.textContent = "✓ From AniList: " + (m.en || m.romaji) + "  •  RU: " + ru; }
+    else { ruField.value = m.native || ""; note.textContent = "✓ From AniList: " + (m.en || m.romaji) + (m.native ? "  •  JP: " + m.native + " (no Russian title found)" : "  (no Russian title found)"); }
+  }
+}
+// Look up a Russian label for a title via Wikidata (best-effort, anime/manga have spotty coverage)
+async function wikidataRuTitle(name) {
+  if (!name) return "";
+  try {
+    const s = 'SELECT ?ruLabel WHERE { ?item rdfs:label "' + name.replace(/"/g, '') + '"@en. ?item rdfs:label ?ruLabel. FILTER(LANG(?ruLabel)="ru") } LIMIT 1';
+    const r = await fetch("https://query.wikidata.org/sparql?format=json&query=" + encodeURIComponent(s), { headers: { "Accept": "application/sparql-results+json" } });
+    if (!r.ok) return "";
+    const j = await r.json();
+    const b = j.results && j.results.bindings && j.results.bindings[0];
+    return b && b.ruLabel ? b.ruLabel.value : "";
+  } catch { return ""; }
+}
+
+async function applyChoice(imdbID, originalQuery) {
+  const note = document.getElementById("autofillNote");
+  note.textContent = "Loading details…";
+  try {
+    const r = await fetch("https://www.omdbapi.com/?apikey=" + OMDB_KEY + "&i=" + encodeURIComponent(imdbID));
+    const d = await r.json();
+    if (d.Response === "False") { note.textContent = "Couldn't load that title."; return; }
+    if (d.Poster && d.Poster !== "N/A") document.getElementById("f_poster").value = d.Poster;
+    if (d.Year) document.getElementById("f_year").value = (d.Year.match(/\d{4}/) || [""])[0];
+    if (d.imdbRating && d.imdbRating !== "N/A") document.getElementById("f_imdb_rating").value = d.imdbRating;
+    if (d.Genre && d.Genre !== "N/A") document.getElementById("f_imdb_genre").value = d.Genre;
+    const isAnim = (d.Genre || "").toLowerCase().includes("animation");
+    if (isAnim && !document.getElementById("f_type").value) document.getElementById("f_type").value = "animation";
+
+    // Bilingual: OMDb's main Title is the English/international name.
+    // If the user searched in Russian, keep their Russian text as the RU title and put the English name in the title field.
+    // If they searched in English, put the English name in the title field and try to find a Russian title.
+    const enField = document.getElementById("f_title");
+    const ruField = document.getElementById("f_title_ru");
+    if (hasCyrillic(originalQuery)) {
+      if (!ruField.value) ruField.value = originalQuery;      // preserve what they typed as the Russian title
+      if (d.Title) enField.value = d.Title;                    // English title from IMDb
+    } else {
+      if (d.Title) enField.value = d.Title;
+      // try to fetch a Russian-language title
+      const ru = await fetchRussianTitle(imdbID);
+      if (ru && !ruField.value) ruField.value = ru;
+    }
+    note.textContent = "✓ Filled from IMDb: " + d.Title + " (" + (d.Year || "?") + ")" +
+      (ruField.value ? "  •  RU: " + ruField.value : "  •  (no Russian title found — you can add it)");
+  } catch {
+    note.textContent = "Couldn't load that title — fill it in by hand.";
+  }
+}
+
+// OMDb has no localized-title endpoint on the free tier; we best-effort ask Wikidata for a Russian label by IMDb id.
+async function fetchRussianTitle(imdbID) {
+  try {
+    const sparql = 'SELECT ?ruLabel WHERE { ?item wdt:P345 "' + imdbID + '". ?item rdfs:label ?ruLabel. FILTER(LANG(?ruLabel)="ru") } LIMIT 1';
+    const url = "https://query.wikidata.org/sparql?format=json&query=" + encodeURIComponent(sparql);
+    const r = await fetch(url, { headers: { "Accept": "application/sparql-results+json" } });
+    if (!r.ok) return "";
+    const j = await r.json();
+    const b = j.results && j.results.bindings && j.results.bindings[0];
+    return b && b.ruLabel ? b.ruLabel.value : "";
+  } catch { return ""; }
+}
+
+/* ---- Rendering ---- */
+function renderTabs() {
+  const el = document.getElementById("tabs");
+  el.innerHTML = "";
+  orderedCatKeys().forEach(k => {
+    const b = document.createElement("button");
+    b.className = "tab" + (!state.showStats && state.activeCat === k ? " active" : "");
+    b.textContent = (adminMode ? "⋮⋮ " : "") + CATEGORIES[k].label;
+    b.dataset.cat = k;
+    b.onclick = () => { state.showStats = false; state.activeCat = k; markActiveTab(); renderView(); };
+    if (adminMode) {
+      b.draggable = true;
+      b.ondragstart = e => { e.dataTransfer.setData("text/plain", "cat:" + k); };
+      b.ondragover = e => e.preventDefault();
+      b.ondrop = e => {
+        e.preventDefault();
+        const data = e.dataTransfer.getData("text/plain");
+        if (!data.startsWith("cat:")) return;
+        const from = data.slice(4); if (from === k) return;
+        const arr = orderedCatKeys().filter(x => x !== from);
+        arr.splice(arr.indexOf(k), 0, from);
+        saveCatOrder(arr); renderTabs();
+      };
+    }
+    el.appendChild(b);
+  });
+  const sb = document.createElement("button");
+  sb.className = "tab" + (state.showStats ? " active" : "");
+  sb.dataset.cat = "__stats__";
+  sb.textContent = "📊 Stats";
+  sb.onclick = () => { state.showStats = true; markActiveTab(); renderView(); };
+  el.appendChild(sb);
+}
+function markActiveTab() {
+  document.querySelectorAll("#tabs .tab").forEach(b => {
+    const isActive = state.showStats ? (b.dataset.cat === "__stats__") : (!state.showStats && b.dataset.cat === state.activeCat);
+    b.classList.toggle("active", isActive);
+  });
+}
+
+function renderView() {
+  const groupsEl = document.getElementById("groups");
+  const statsEl = document.getElementById("statsWrap");
+  const toolbar = document.querySelector(".toolbar");
+  if (state.showStats) {
+    groupsEl.style.display = "none";
+    statsEl.style.display = "block";
+    toolbar.style.display = "none";
+    renderStats();
+  } else {
+    groupsEl.style.display = "block";
+    statsEl.style.display = "none";
+    toolbar.style.display = "flex";
+    renderGroups();
+  }
+}
+
+function renderStats() {
+  const wrap = document.getElementById("statsWrap");
+  const items = state.items;
+  const finishedStatuses = ["Watched", "Read", "Finished"];
+  const finished = items.filter(it => finishedStatuses.includes(it.status));
+  const rated = items.filter(it => parseFloat(it.my_rating) > 0);
+  const avg = rated.length ? (rated.reduce((s, it) => s + parseFloat(it.my_rating), 0) / rated.length).toFixed(1) : "–";
+  const favs = items.filter(it => it.favourite).length;
+  const recs = items.filter(it => it.recommend).length;
+
+  const cards = [
+    { n: items.length, l: "Total items" },
+    { n: finished.length, l: "Finished (watched/read)" },
+    { n: avg, l: "My average rating" },
+    { n: favs, l: "⭐ Favourites" },
+    { n: recs, l: "👍 Recommended" }
+  ];
+  let html = '<div class="stat-cards">';
+  cards.forEach(c => html += '<div class="stat-card"><div class="stat-num">' + c.n + '</div><div class="stat-lbl">' + c.l + '</div></div>');
+  html += '</div>';
+
+  // Per-category counts as bars
+  html += '<div class="stat-section"><h3>Items by category</h3>';
+  const maxCat = Math.max(1, ...CAT_KEYS.map(k => items.filter(it => it.category === k).length));
+  CAT_KEYS.forEach(k => {
+    const n = items.filter(it => it.category === k).length;
+    html += '<div class="bar-row"><span class="bar-label">' + CATEGORIES[k].label + '</span>' +
+      '<span class="bar-track"><span class="bar-fill" style="width:' + (n / maxCat * 100) + '%"></span></span>' +
+      '<span class="bar-val">' + n + '</span></div>';
+  });
+  html += '</div>';
+
+  // Top rated
+  const top = [...rated].sort((a, b) => parseFloat(b.my_rating) - parseFloat(a.my_rating)).slice(0, 5);
+  if (top.length) {
+    html += '<div class="stat-section"><h3>Your top rated</h3>';
+    top.forEach(it => html += '<div class="bar-row"><span class="bar-label" style="width:auto;flex:1;color:var(--text)">' +
+      escapeHtml(it.title) + '</span><span class="badge mine">' + escapeHtml(it.my_rating) + '/10</span></div>');
+    html += '</div>';
+  }
+
+  // By decade (from year)
+  const decades = {};
+  items.forEach(it => { const y = parseInt(it.year, 10); if (y) { const d = Math.floor(y / 10) * 10 + "s"; decades[d] = (decades[d] || 0) + 1; } });
+  const decadeKeys = Object.keys(decades).sort();
+  if (decadeKeys.length) {
+    html += '<div class="stat-section"><h3>By decade</h3>';
+    const maxD = Math.max(...decadeKeys.map(k => decades[k]));
+    decadeKeys.forEach(k => {
+      html += '<div class="bar-row"><span class="bar-label">' + k + '</span>' +
+        '<span class="bar-track"><span class="bar-fill" style="width:' + (decades[k] / maxD * 100) + '%"></span></span>' +
+        '<span class="bar-val">' + decades[k] + '</span></div>';
+    });
+    html += '</div>';
+  }
+
+  // Top genres (split IMDb genre strings)
+  const genreCount = {};
+  items.forEach(it => {
+    (it.imdb_genre || "").split(",").map(s => s.trim()).filter(Boolean).forEach(g => { genreCount[g] = (genreCount[g] || 0) + 1; });
+  });
+  const topGenres = Object.entries(genreCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  if (topGenres.length) {
+    html += '<div class="stat-section"><h3>Top genres</h3>';
+    const maxG = topGenres[0][1];
+    topGenres.forEach(([g, n]) => {
+      html += '<div class="bar-row"><span class="bar-label">' + escapeHtml(g) + '</span>' +
+        '<span class="bar-track"><span class="bar-fill" style="width:' + (n / maxG * 100) + '%"></span></span>' +
+        '<span class="bar-val">' + n + '</span></div>';
+    });
+    html += '</div>';
+  }
+  wrap.innerHTML = html;
+}
+
+function matchesFilter(it) {
+  if (state.favOnly && !it.favourite) return false;
+  if (state.recOnly && !it.recommend) return false;
+  if (state.priOnly && !it.priority) return false;
+  const q = state.filter.toLowerCase();
+  if (!q) return true;
+  return [it.title, it.title_ru, it.imdb_genre, it.my_genre, it.notes].filter(Boolean).join(" ").toLowerCase().includes(q);
+}
+
+/* ---- Fuzzy matching (typo-tolerant) ---- */
+// Levenshtein distance, capped for speed
+function editDistance(a, b) {
+  a = a.toLowerCase(); b = b.toLowerCase();
+  const m = a.length, n = b.length;
+  if (Math.abs(m - n) > 4) return 99;
+  const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = Math.min(dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+    }
+  }
+  return dp[m][n];
+}
+// Confidence check: does the query resemble any of the candidate titles?
+function titleMatches(query, candidates) {
+  const clean = s => (s || "").toLowerCase().replace(/[^a-zа-яё0-9\s]/gi, "").trim();
+  const q = clean(query);
+  if (!q) return false;
+  for (const c of (candidates || [])) {
+    const cand = clean(c);
+    if (!cand) continue;
+    if (cand === q || cand.includes(q) || q.includes(cand)) return true;
+    const qw = q.split(/\s+/).filter(w => w.length > 2);
+    const overlap = qw.filter(w => cand.includes(w)).length;
+    if (qw.length && overlap / qw.length >= 0.5) return true;
+    if (editDistance(q, cand) <= Math.max(1, Math.floor(cand.length / 4))) return true;
+  }
+  return false;
+}
+
+// Score how well an item matches a query fuzzily (lower = better; null = no match)
+function fuzzyScore(it, q) {
+  q = q.toLowerCase().trim();
+  const fields = [it.title, it.title_ru].filter(Boolean);
+  let best = null;
+  for (const f of fields) {
+    const words = (f || "").toLowerCase().split(/\s+/);
+    for (const w of words) {
+      const d = editDistance(q, w);
+      const tol = Math.max(1, Math.floor(w.length / 3)); // allow ~1 typo per 3 chars
+      if (d <= tol) best = best === null ? d : Math.min(best, d);
+    }
+    // also: query is a close prefix of the whole title
+    const whole = (f || "").toLowerCase();
+    if (whole.startsWith(q.slice(0, Math.max(3, q.length - 2)))) best = best === null ? 1 : Math.min(best, 1);
+  }
+  return best;
+}
+function sortItems(arr) {
+  const s = state.sort;
+  const num = v => { const n = parseFloat(v); return isNaN(n) ? -1 : n; };
+  return [...arr].sort((a, b) => {
+    if (s === "custom") {
+      const oa = (a.order != null ? a.order : (a.added || 0));
+      const ob = (b.order != null ? b.order : (b.added || 0));
+      return oa - ob;
+    }
+    if (s === "priority") {
+      const pa = a.priority ? 1 : 0, pb = b.priority ? 1 : 0;
+      if (pa !== pb) return pb - pa;
+      return (b.added || 0) - (a.added || 0);
+    }
+    if (s === "title") return (a.title || "").localeCompare(b.title || "");
+    if (s === "year") return num(b.year) - num(a.year);
+    if (s === "my_rating") return num(b.my_rating) - num(a.my_rating);
+    if (s === "imdb_rating") return num(b.imdb_rating) - num(a.imdb_rating);
+    return (b.added || 0) - (a.added || 0);
+  });
+}
+
+function renderGroups() {
+  const wrap = document.getElementById("groups");
+  wrap.innerHTML = "";
+  window._visibleOrder = [];
+  const cat = CATEGORIES[state.activeCat];
+  const inCat = state.items.filter(it => it.category === state.activeCat && matchesFilter(it));
+
+  if (inCat.length === 0) {
+    // Fuzzy fallback: exact search found nothing — offer close matches across ALL categories
+    if (state.filter.trim()) {
+      const q = state.filter;
+      const scored = state.items
+        .map(it => ({ it, s: fuzzyScore(it, q) }))
+        .filter(x => x.s !== null)
+        .sort((a, b) => a.s - b.s)
+        .slice(0, 24);
+      if (scored.length) {
+        const note = document.createElement("div");
+        note.className = "empty";
+        note.style.paddingBottom = "10px";
+        note.innerHTML = 'No exact match for “' + escapeHtml(q) + '”. Did you mean:';
+        wrap.appendChild(note);
+        wrap.appendChild(renderItemsContainer(scored.map(x => x.it)));
+        return;
+      }
+    }
+    wrap.innerHTML = '<div class="empty">Nothing here yet. Tap the + button to add your first ' + cat.label.toLowerCase() + ' entry.</div>';
+    return;
+  }
+  orderedStatuses(state.activeCat).forEach(status => {
+    const items = sortItems(inCat.filter(it => it.status === status));
+    if (items.length === 0) return;
+    const collapseKey = state.activeCat + "|" + status;
+    const collapsed = isCollapsed(collapseKey);
+
+    const group = document.createElement("div");
+    group.className = "group";
+    const head = document.createElement("div");
+    head.className = "group-head collapsible";
+    head.innerHTML = '<span class="caret">' + (collapsed ? "▸" : "▾") + '</span>' + (adminMode ? '<span style="color:var(--muted);cursor:grab">⋮⋮</span> ' : '') + '<h3>' + escapeHtml(status) +
+      '</h3><span class="group-count">' + items.length + '</span>';
+    head.onclick = () => { toggleCollapsed(collapseKey); renderGroups(); };
+    if (adminMode) {
+      head.draggable = true;
+      head.ondragstart = e => { e.stopPropagation(); e.dataTransfer.setData("text/plain", "status:" + status); };
+      head.ondragover = e => e.preventDefault();
+      head.ondrop = e => {
+        e.preventDefault();
+        const data = e.dataTransfer.getData("text/plain");
+        if (!data.startsWith("status:")) return;
+        const from = data.slice(7); if (from === status) return;
+        const arr = orderedStatuses(state.activeCat).filter(x => x !== from);
+        arr.splice(arr.indexOf(status), 0, from);
+        saveStatusOrder(state.activeCat, arr); renderGroups();
+      };
+    }
+    group.appendChild(head);
+
+    if (!collapsed) {
+      // Movies → To watch: group by "my genre"
+      if (state.activeCat === "movies" && status === "To watch") {
+        const byGenre = {};
+        items.forEach(it => { const g = it.my_genre || "Other"; (byGenre[g] = byGenre[g] || []).push(it); });
+        Object.keys(byGenre).sort().forEach(genre => {
+          appendSubgroup(group, "genre|" + genre, genre, byGenre[genre]);
+        });
+      // Movies & TV → Watched: split Animation vs Non-animation
+      } else if ((state.activeCat === "movies" || state.activeCat === "tv") && status === "Watched") {
+        const anim = items.filter(it => it.type === "animation");
+        const real = items.filter(it => it.type !== "animation");
+        if (anim.length) appendSubgroup(group, "type|" + state.activeCat + "|anim", "🎨 Animation", anim);
+        if (real.length) appendSubgroup(group, "type|" + state.activeCat + "|real", "🎬 Non-animation", real);
+      // Books → split Books vs Poems (poems tagged my_genre == "Poem")
+      } else if (state.activeCat === "books") {
+        const isPoem = it => it.type === "poem" || (it.my_genre || "").toLowerCase() === "poem";
+        const poems = items.filter(isPoem);
+        const books = items.filter(it => !isPoem(it));
+        if (books.length) appendSubgroup(group, "kind|books|" + status, "📖 Books", books);
+        if (poems.length) appendSubgroup(group, "kind|poems|" + status, "📝 Poems", poems);
+      } else {
+        group.appendChild(renderItemsContainer(items));
+      }
+    }
+    wrap.appendChild(group);
+  });
+}
+
+// A collapsible sub-section (genre / type) with its own caret + persisted state
+function appendSubgroup(group, key, label, items) {
+  const collapsed = isCollapsed(key);
+  const h = document.createElement("div");
+  h.className = "genre-head collapsible";
+  h.innerHTML = '<span class="caret">' + (collapsed ? "▸" : "▾") + '</span> ' + escapeHtml(label) + ' (' + items.length + ')';
+  h.onclick = () => { toggleCollapsed(key); renderGroups(); };
+  group.appendChild(h);
+  if (!collapsed) group.appendChild(renderItemsContainer(items));
+}
+
+function renderItemsContainer(items) {
+  const sorted = sortItems(items);
+  window._visibleOrder = (window._visibleOrder || []).concat(sorted.map(x => x.id));
+  if (state.viewMode === "list") {
+    const list = document.createElement("div");
+    list.className = "list size-" + state.listSize;
+    sorted.forEach(it => list.appendChild(renderRow(it)));
+    return list;
+  }
+  const cards = document.createElement("div");
+  cards.className = "cards size-" + state.cardSize;
+  sorted.forEach(it => cards.appendChild(renderCard(it)));
+  return cards;
+}
+
+/* Collapse state (persisted) */
+const COLLAPSE_KEY = "myTracker.collapsed.v1";
+function getCollapsedSet() { try { return new Set(JSON.parse(localStorage.getItem(COLLAPSE_KEY) || "[]")); } catch { return new Set(); } }
+function isCollapsed(key) { return getCollapsedSet().has(key); }
+function toggleCollapsed(key) {
+  const s = getCollapsedSet();
+  if (s.has(key)) s.delete(key); else s.add(key);
+  localStorage.setItem(COLLAPSE_KEY, JSON.stringify([...s]));
+}
+
+function renderRow(it) {
+  const r = document.createElement("div");
+  r.className = "row";
+  r.onclick = () => openEditor(it.id);
+  let poster;
+  if (it.poster) poster = '<img class="row-poster" src="' + escapeAttr(it.poster) + '" loading="lazy" onerror="this.replaceWith(makeRowPh())" />';
+  else poster = '<div class="row-poster ph">🎬</div>';
+  const sub = [];
+  if (it.title_ru) sub.push(escapeHtml(it.title_ru));
+  if (it.type === "animation") sub.push("animation");
+  if (it.year) sub.push(escapeHtml(it.year));
+  if (it.imdb_rating) sub.push("IMDb " + escapeHtml(it.imdb_rating));
+  if (it.my_rating) sub.push("Me " + escapeHtml(it.my_rating) + "/10");
+  if (it.imdb_genre) sub.push(escapeHtml(it.imdb_genre));
+  if (it.my_genre) sub.push(escapeHtml(it.my_genre));
+  if (it.progress) sub.push("▶ " + escapeHtml(it.progress));
+  if (it.release_date) sub.push((it.release_sure ? "📅 " : "📅 ~") + escapeHtml(it.release_date));
+  if (it.notes) sub.push("📝 " + escapeHtml(it.notes));
+  const flags = [];
+  if (it.favourite) flags.push("⭐");
+  if (it.recommend) flags.push("👍");
+  if (it.priority) flags.push("🔺");
+  r.innerHTML = poster +
+    '<div class="row-main"><div class="row-title">' + escapeHtml(it.title || "Untitled") + '</div>' +
+    (sub.length ? '<div class="row-sub">' + sub.map(s => "<span>" + s + "</span>").join("") + '</div>' : "") +
+    '</div>' +
+    (flags.length ? '<div class="row-flags">' + flags.join("") + '</div>' : "");
+  return r;
+}
+function makeRowPh() { const d = document.createElement("div"); d.className = "row-poster ph"; d.textContent = "🎬"; return d; }
+
+function renderSizeControls() {
+  const seg = document.getElementById("sizeSeg");
+  const sizes = state.viewMode === "list" ? LIST_SIZES : CARD_SIZES;
+  const current = state.viewMode === "list" ? state.listSize : state.cardSize;
+  seg.innerHTML = "";
+  sizes.forEach(([val, label]) => {
+    const b = document.createElement("button");
+    b.textContent = label;
+    if (val === current) b.className = "on";
+    b.onclick = () => {
+      if (state.viewMode === "list") state.listSize = val; else state.cardSize = val;
+      saveView(); renderSizeControls(); renderGroups();
+    };
+    seg.appendChild(b);
+  });
+  // reflect active mode button
+  document.querySelectorAll("#viewModeSeg button").forEach(btn => {
+    btn.className = btn.dataset.mode === state.viewMode ? "on" : "";
+  });
+}
+
+function renderCard(it) {
+  const c = document.createElement("div");
+  c.className = "card";
+  c.dataset.id = it.id;
+  if (state.selectMode && state.selected[it.id]) c.classList.add("selected");
+  // drag-to-reorder in custom sort mode (edit mode, not selecting)
+  if (state.sort === "custom" && canEdit && !state.selectMode) {
+    c.draggable = true;
+    c.ondragstart = (e) => { e.dataTransfer.setData("text/plain", it.id); c.style.opacity = "0.5"; };
+    c.ondragend = () => { c.style.opacity = "1"; };
+    c.ondragover = (e) => { e.preventDefault(); };
+    c.ondrop = (e) => { e.preventDefault(); const from = e.dataTransfer.getData("text/plain"); reorderItem(from, it.id); };
+  }
+  c.onclick = (e) => {
+    if (state.selectMode) { toggleSelect(it.id, e.shiftKey); return; }
+    openEditor(it.id);
+  };
+
+  let posterHtml;
+  if (it.poster) posterHtml = '<img class="poster" src="' + escapeAttr(it.poster) + '" loading="lazy" onerror="this.replaceWith(makePlaceholder())" />';
+  else posterHtml = '<div class="poster placeholder">' + (it.category === "books" ? "📖" : "🎬") + '</div>';
+
+  const flags = [];
+  if (it.favourite) flags.push('<span class="flag">⭐</span>');
+  if (it.recommend) flags.push('<span class="flag">👍</span>');
+  if (it.priority) flags.push('<span class="flag">🔺</span>');
+
+  const meta = [];
+  if (it.year) meta.push('<span>' + escapeHtml(it.year) + '</span>');
+  if (it.imdb_rating) meta.push('<span class="badge rating">' + (it.category === "anime" || it.category === "manga" ? "★ " : "IMDb ") + escapeHtml(it.imdb_rating) + '</span>');
+  if (it.release_date) {
+    const lbl = it.release_sure ? "📅 " + it.release_date : "📅 ~" + it.release_date + " (maybe)";
+    meta.push('<span class="badge release-badge">' + escapeHtml(lbl) + '</span>');
+  }
+
+  const sub = displaySubtitle(it);
+  c.innerHTML =
+    '<div class="poster-wrap">' + posterHtml + '</div>' +
+    (flags.length ? '<div class="flags">' + flags.join("") + '</div>' : "") +
+    (state.selectMode ? '<div class="sel-check">' + (state.selected[it.id] ? "☑" : "☐") + '</div>' : "") +
+    '<div class="card-body">' +
+      '<div class="card-title">' + escapeHtml(displayTitle(it) || "Untitled") + '</div>' +
+      (sub ? '<div class="card-ru">' + escapeHtml(sub) + '</div>' : "") +
+      (it.category === "books" && it.author ? '<div class="card-ru">✍ ' + escapeHtml(it.author) + '</div>' : "") +
+      (meta.length ? '<div class="card-meta">' + meta.join("") + '</div>' : "") +
+      (it.progress ? '<div class="progress">▶ ' + escapeHtml(it.progress) + '</div>' : "") +
+      (it.my_genre ? '<div class="card-meta"><span>' + escapeHtml(translateGenreString(it.my_genre)) + '</span></div>' : "") +
+    '</div>';
+
+  // inline star rating (1..10 shown as 5 stars = /2 each; click sets my_rating)
+  const body = c.querySelector(".card-body");
+  const stars = document.createElement("div");
+  stars.className = "stars";
+  const cur = parseFloat(it.my_rating) || 0;
+  for (let s = 1; s <= 5; s++) {
+    const span = document.createElement("span");
+    span.className = "s" + (cur >= s * 2 ? " on" : "");
+    span.textContent = "★";
+    span.onclick = (e) => {
+      e.stopPropagation();
+      if (!canEdit) return;
+      const val = s * 2;
+      it.my_rating = (parseFloat(it.my_rating) === val) ? "" : String(val);
+      persistItem(it);
+    };
+    stars.appendChild(span);
+  }
+  body.appendChild(stars);
+
+  // quick actions (edit mode): flag toggles + 3-dot status menu, over the poster
+  const actions = document.createElement("div");
+  actions.className = "card-actions";
+  const mkBtn = (label, title, on, fn) => {
+    const b = document.createElement("button"); b.textContent = label; b.title = title;
+    if (on) b.classList.add("on");
+    b.onclick = (e) => { e.stopPropagation(); fn(); }; return b;
+  };
+  actions.appendChild(mkBtn("⭐", "Toggle favourite", it.favourite, () => { it.favourite = !it.favourite; persistItem(it); }));
+  actions.appendChild(mkBtn("👍", "Toggle recommend", it.recommend, () => { it.recommend = !it.recommend; persistItem(it); }));
+  actions.appendChild(mkBtn("🔺", "Toggle priority", it.priority, () => { it.priority = !it.priority; persistItem(it); }));
+  const dots = mkBtn("⋯", "Change status", false, (e) => { openStatusMenu(it, actions); });
+  actions.appendChild(dots);
+  const pw = c.querySelector(".poster-wrap");
+  (pw || c).appendChild(actions);
+
+  return c;
+}
+
+// Save a single edited item locally + to cloud, with flash + re-render
+async function persistItem(it) {
+  const idx = state.items.findIndex(x => x.id === it.id);
+  if (idx >= 0) state.items[idx] = it;
+  saveLocal();
+  renderGroups();
+  if (supa) { try { await supaUpsert(it); setSyncDot("on"); syncFlash(true); } catch { setSyncDot("err"); syncFlash(false); } }
+  else { syncFlash(true); }
+}
+function makePlaceholder() { const d = document.createElement("div"); d.className = "poster placeholder"; d.textContent = "🎬"; return d; }
+
+// Status popup menu for a card (3-dot button)
+function openStatusMenu(it, anchor) {
+  document.querySelectorAll(".status-menu").forEach(m => m.remove());
+  const menu = document.createElement("div");
+  menu.className = "status-menu";
+  CATEGORIES[it.category].statuses.forEach(st => {
+    const b = document.createElement("button");
+    b.textContent = st; if (st === it.status) b.classList.add("cur");
+    b.onclick = (e) => { e.stopPropagation(); it.status = st; menu.remove(); persistItem(it); };
+    menu.appendChild(b);
+  });
+  document.body.appendChild(menu);
+  const r = anchor.getBoundingClientRect();
+  menu.style.left = Math.min(r.left, window.innerWidth - 170) + "px";
+  menu.style.top = (r.bottom + window.scrollY + 4) + "px";
+  setTimeout(() => document.addEventListener("click", function h() { menu.remove(); document.removeEventListener("click", h); }), 0);
+}
+
+// Reorder: place `fromId` immediately before `toId`, renumber that status group's order
+async function reorderItem(fromId, toId) {
+  if (fromId === toId) return;
+  const from = state.items.find(x => x.id === fromId);
+  const to = state.items.find(x => x.id === toId);
+  if (!from || !to) return;
+  // work within the same category+status group, in current sorted order
+  const group = sortItems(state.items.filter(x => x.category === to.category && x.status === to.status));
+  const ids = group.map(x => x.id).filter(id => id !== fromId);
+  const at = ids.indexOf(toId);
+  ids.splice(at, 0, fromId);
+  // reassign sequential order; ensure from adopts the group's status/category
+  from.category = to.category; from.status = to.status;
+  ids.forEach((id, i) => { const it = state.items.find(x => x.id === id); if (it) it.order = i; });
+  saveLocal();
+  renderGroups();
+  if (supa) { for (const id of ids) { const it = state.items.find(x => x.id === id); if (it) { try { await supaUpsert(it); } catch {} } } setSyncDot("on"); }
+}
+
+function escapeHtml(s) { return String(s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m])); }
+function escapeAttr(s) { return escapeHtml(s).replace(/'/g, "&#39;"); }
+
+/* ---- Editor ---- */
+function fillCategorySelect(sel, val) {
+  sel.innerHTML = "";
+  CAT_KEYS.forEach(k => {
+    const o = document.createElement("option");
+    o.value = k; o.textContent = CATEGORIES[k].label;
+    if (k === val) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+function fillStatusSelect(catKey, val) {
+  const sel = document.getElementById("f_status");
+  sel.innerHTML = "";
+  CATEGORIES[catKey].statuses.forEach(s => {
+    const o = document.createElement("option");
+    o.value = s; o.textContent = s;
+    if (s === val) o.selected = true;
+    sel.appendChild(o);
+  });
+  const cat = CATEGORIES[catKey];
+  document.getElementById("progressField").style.display = cat.progress ? "block" : "none";
+  if (cat.progress && cat.progressLabel) document.getElementById("progressLabel").textContent = cat.progressLabel;
+  document.getElementById("authorField").style.display = (catKey === "books") ? "block" : "none";
+  fillTypeSelect(catKey);
+  toggleReleaseField();
+}
+function fillTypeSelect(catKey, val) {
+  const sel = document.getElementById("f_type");
+  const prev = val != null ? val : sel.value;
+  const opts = (catKey === "books")
+    ? [["", "—"], ["book", "Book"], ["poem", "Poem"]]
+    : [["", "—"], ["real", "Real / live-action"], ["animation", "Animation"]];
+  sel.innerHTML = "";
+  opts.forEach(([v, label]) => { const o = document.createElement("option"); o.value = v; o.textContent = label; if (v === prev) o.selected = true; sel.appendChild(o); });
+}
+function toggleReleaseField() {
+  const st = document.getElementById("f_status").value;
+  document.getElementById("releaseField").style.display = (st === "To be released") ? "block" : "none";
+}
+
+/* Read-only detail popup for view mode */
+async function openDetail(id) {
+  const it = state.items.find(x => x.id === id);
+  if (!it) return;
+  const m = document.getElementById("detailModal");
+  m.style.position = "relative";
+
+  const rows = [];
+  const otherTitle = state.lang === "ru" ? it.title : it.title_ru;
+  if (otherTitle && otherTitle !== displayTitle(it)) rows.push([state.lang === "ru" ? "English title" : "Russian title", otherTitle]);
+  if (it.category === "books" && it.author) rows.push(["Author", it.author]);
+  rows.push(["Category", CATEGORIES[it.category].label]);
+  rows.push(["Status", it.status]);
+  if (it.type) rows.push(["Type", it.type === "animation" ? "Animation" : "Live-action"]);
+  if (it.year) rows.push(["Year", it.year]);
+  if (it.imdb_rating) rows.push(["Rating", it.imdb_rating]);
+  if (it.my_rating) rows.push(["My rating", it.my_rating + "/10"]);
+  if (it.imdb_genre) rows.push(["Genre", translateGenreString(it.imdb_genre)]);
+  if (it.my_genre) rows.push(["My genre", translateGenreString(it.my_genre)]);
+  if (it.progress) rows.push(["Progress", it.progress]);
+  if (it.release_date) rows.push(["Release", (it.release_sure ? "" : "~") + it.release_date]);
+  const flags = [it.favourite ? "⭐ Favourite" : "", it.recommend ? "👍 Recommend" : "", it.priority ? "🔺 Priority" : ""].filter(Boolean).join("  ");
+
+  const closeX = '<button id="detailX" title="Close" style="position:absolute;top:10px;right:12px;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1">✕</button>';
+  // short summary: a couple of key facts
+  const summaryBits = [];
+  if (it.category === "books" && it.author) summaryBits.push(escapeHtml(it.author));
+  if (it.year) summaryBits.push(escapeHtml(it.year));
+  if (it.imdb_rating) summaryBits.push("★ " + escapeHtml(it.imdb_rating));
+  if (it.my_rating) summaryBits.push("me " + escapeHtml(it.my_rating) + "/10");
+  const genreLine = translateGenreString(it.imdb_genre || it.my_genre || "");
+
+  function renderSummary(bigPoster) {
+    // stage: 0 = blurred poster + description overlay, 1 = clean full poster, no text
+    const desc = displayDescription(it);
+    if (!it.poster) {
+      m.innerHTML = closeX +
+        '<h2 style="margin:0 20px 8px 0">' + escapeHtml(displayTitle(it) || "Untitled") + '</h2>' +
+        (genreLine ? '<div style="color:var(--accent-2);font-size:12px;margin-bottom:10px">' + escapeHtml(genreLine) + '</div>' : '') +
+        '<div style="text-align:center;font-size:64px;margin:10px 0">' + (it.category === "books" ? "📖" : "🎬") + '</div>' +
+        (desc ? '<div style="font-size:13px;line-height:1.5;margin-bottom:10px">' + escapeHtml(desc) + '</div>' : '<div style="color:var(--muted);font-size:13px;margin-bottom:10px">No description yet.</div>') +
+        (flags ? '<div style="margin-bottom:10px">' + flags + '</div>' : '') +
+        '<div class="modal-actions"><button class="btn" id="detailMore">Details ▾</button></div>';
+      wireCommon();
+      document.getElementById("detailMore").onclick = renderFull;
+      return;
+    }
+    if (!bigPoster) {
+      // stage 1: blurred poster with the description written over it
+      m.innerHTML = closeX +
+        '<div style="position:relative;border-radius:12px;overflow:hidden;min-height:300px">' +
+          '<img id="detailPoster" src="' + escapeAttr(it.poster) + '" style="width:100%;max-height:62dvh;object-fit:cover;filter:blur(7px) brightness(0.5);display:block;cursor:zoom-in" />' +
+          '<div style="position:absolute;inset:0;padding:18px 16px;display:flex;flex-direction:column;justify-content:flex-end;cursor:zoom-in" id="detailOverlayText">' +
+            '<h2 style="margin:0 24px 6px 0;color:#fff;text-shadow:0 1px 6px #000">' + escapeHtml(displayTitle(it) || "Untitled") + '</h2>' +
+            (summaryBits.length ? '<div style="color:#e8e8ee;font-size:13px;margin-bottom:6px;text-shadow:0 1px 4px #000">' + summaryBits.join("  ·  ") + '</div>' : '') +
+            (genreLine ? '<div style="color:#9fe6ea;font-size:12px;margin-bottom:8px;text-shadow:0 1px 4px #000">' + escapeHtml(genreLine) + '</div>' : '') +
+            (desc ? '<div style="color:#f0f0f4;font-size:13px;line-height:1.5;max-height:34dvh;overflow:auto;text-shadow:0 1px 4px #000">' + escapeHtml(desc) + '</div>' : '<div style="color:#cfcfd6;font-size:12px">No description yet — tap poster for full image.</div>') +
+          '</div>' +
+        '</div>' +
+        (flags ? '<div style="margin:10px 0">' + flags + '</div>' : '') +
+        '<div class="modal-actions"><button class="btn" id="detailMore">Details ▾</button></div>';
+      wireCommon();
+      const toClean = () => renderSummary(true);
+      document.getElementById("detailPoster").onclick = toClean;
+      document.getElementById("detailOverlayText").onclick = toClean;
+      document.getElementById("detailMore").onclick = renderFull;
+    } else {
+      // stage 2: clean full-quality poster, no text
+      m.innerHTML = closeX +
+        '<img id="detailPoster" src="' + escapeAttr(it.poster) + '" style="width:100%;max-height:70dvh;object-fit:contain;border-radius:10px;display:block;cursor:zoom-out;background:#000" />' +
+        '<div class="modal-actions"><button class="btn" id="detailMore">Details ▾</button></div>';
+      wireCommon();
+      document.getElementById("detailPoster").onclick = () => renderSummary(false);
+      document.getElementById("detailMore").onclick = renderFull;
+    }
+  }
+
+  async function renderFull() {
+    let notesHtml = "";
+    if (it.notes) notesHtml = '<div id="detailNotes" style="clear:both;margin-top:10px;font-size:13px"><span style="color:var(--muted)">Notes:</span><br>' + escapeHtml(it.notes) + '</div>';
+    const poster = it.poster
+      ? '<img src="' + escapeAttr(it.poster) + '" style="width:110px;aspect-ratio:2/3;object-fit:cover;border-radius:8px;float:left;margin:0 14px 8px 0" onerror="this.style.display=\'none\'" />' : '';
+    m.innerHTML = closeX +
+      '<h2 style="margin:0 20px 12px 0">' + escapeHtml(displayTitle(it) || "Untitled") + '</h2>' +
+      poster +
+      (flags ? '<div style="margin-bottom:8px">' + flags + '</div>' : '') +
+      rows.map(([k, v]) => '<div style="font-size:13px;margin-bottom:5px"><span style="color:var(--muted)">' + k + ':</span> ' + escapeHtml(String(v)) + '</div>').join('') +
+      notesHtml +
+      '<div class="modal-actions" style="clear:both"><button class="btn" id="detailBack">◂ Back</button></div>';
+    wireCommon();
+    document.getElementById("detailBack").onclick = () => renderSummary(false);
+    if (it.notes && state.lang === "en" && /[а-яё]/i.test(it.notes)) {
+      const el = document.getElementById("detailNotes");
+      const tr = await translateText(it.notes, "ru", "en");
+      if (el) el.innerHTML = '<span style="color:var(--muted)">Notes (translated):</span><br>' + escapeHtml(tr) +
+        '<br><span style="color:var(--muted);font-size:11px">original: ' + escapeHtml(it.notes) + '</span>';
+    }
+  }
+
+  function wireCommon() {
+    document.getElementById("detailX").onclick = () => document.getElementById("detailOverlay").classList.remove("open");
+  }
+
+  renderSummary(false);
+  document.getElementById("detailOverlay").classList.add("open");
+}
+
+function openEditor(id) {
+  if (!canEdit) { openDetail(id); return; } // view-only: show read-only detail
+  editingId = id || null;
+  const it = id ? state.items.find(x => x.id === id) : null;
+  document.getElementById("editorTitle").textContent = it ? "Edit item" : "Add item";
+  document.getElementById("deleteBtn").style.display = it ? "inline-block" : "none";
+  document.getElementById("autofillNote").textContent = "";
+  const sr = document.getElementById("searchResults"); if (sr) { sr.style.display = "none"; sr.innerHTML = ""; }
+  window._lastSearchLang = null;
+  const fs = document.getElementById("f_search"); if (fs) fs.value = "";
+
+  const cat = it ? it.category : state.activeCat;
+  fillCategorySelect(document.getElementById("f_category"), cat);
+  fillStatusSelect(cat, it ? it.status : CATEGORIES[cat].statuses[0]);
+
+  const g = id => document.getElementById(id);
+  g("f_title").value = it?.title || "";
+  g("f_title_ru").value = it?.title_ru || "";
+  g("f_type").value = it?.type || "";
+  g("f_poster").value = it?.poster || "";
+  g("f_year").value = it?.year || "";
+  g("f_imdb_rating").value = it?.imdb_rating || "";
+  g("f_imdb_genre").value = it?.imdb_genre || "";
+  g("f_my_genre").value = it?.my_genre || "";
+  g("f_author").value = it?.author || "";
+  g("f_description") && (g("f_description").value = it?.description || "");
+  g("f_description_ru") && (g("f_description_ru").value = it?.description_ru || "");
+  g("f_my_rating").value = it?.my_rating || "";
+  g("f_progress").value = it?.progress || "";
+  g("f_release_date").value = it?.release_date || "";
+  g("f_release_sure").checked = !!it?.release_sure;
+  g("f_favourite").checked = !!it?.favourite;
+  g("f_recommend").checked = !!it?.recommend;
+  g("f_priority").checked = !!it?.priority;
+  g("f_notes").value = it?.notes || "";
+
+  document.getElementById("editorOverlay").classList.add("open");
+}
+function closeEditor() { document.getElementById("editorOverlay").classList.remove("open"); editingId = null; }
+
+async function saveItem() {
+  const g = id => document.getElementById(id).value.trim();
+  const cat = document.getElementById("f_category").value;
+  const item = {
+    id: editingId || (crypto.randomUUID ? crypto.randomUUID() : "id" + Date.now() + Math.random().toString(16).slice(2)),
+    category: cat,
+    status: document.getElementById("f_status").value,
+    title: g("f_title"),
+    title_ru: g("f_title_ru"),
+    type: g("f_type"),
+    poster: g("f_poster"),
+    year: g("f_year"),
+    imdb_rating: g("f_imdb_rating"),
+    imdb_genre: g("f_imdb_genre"),
+    my_genre: g("f_my_genre"),
+    author: g("f_author"),
+    description: (document.getElementById("f_description") ? document.getElementById("f_description").value : ""),
+    description_ru: (document.getElementById("f_description_ru") ? document.getElementById("f_description_ru").value : ""),
+    my_rating: g("f_my_rating"),
+    progress: g("f_progress"),
+    release_date: g("f_release_date"),
+    release_sure: document.getElementById("f_release_sure").checked,
+    favourite: document.getElementById("f_favourite").checked,
+    recommend: document.getElementById("f_recommend").checked,
+    priority: document.getElementById("f_priority").checked,
+    notes: document.getElementById("f_notes").value,
+    added: editingId ? (state.items.find(x => x.id === editingId)?.added || Date.now()) : Date.now(),
+    primary_lang: (editingId ? (state.items.find(x => x.id === editingId)?.primary_lang) : null)
+      || window._lastSearchLang
+      || (hasCyrillic(g("f_title")) && !g("f_title_ru") ? "ru" : "en")
+  };
+  if (!item.title) { document.getElementById("autofillNote").textContent = "Please give it a title."; return; }
+
+  const idx = state.items.findIndex(x => x.id === item.id);
+  if (idx >= 0) state.items[idx] = item; else state.items.push(item);
+  saveLocal();
+  closeEditor();
+  renderGroups();
+  if (supa) { try { await supaUpsert(item); setSyncDot("on"); syncFlash(true); } catch { setSyncDot("err"); syncFlash(false); } }
+  else { syncFlash(true); }
+}
+
+async function deleteItem() {
+  if (!editingId) return;
+  if (!confirm("Delete this item?")) return;
+  const id = editingId;
+  state.items = state.items.filter(x => x.id !== id);
+  saveLocal();
+  closeEditor();
+  renderGroups();
+  if (supa) { try { await supaDelete(id); setSyncDot("on"); syncFlash(true); } catch { setSyncDot("err"); syncFlash(false); } }
+  else { syncFlash(true); }
+}
+
+/* ---- Sync setup ---- */
+function openSync() {
+  document.getElementById("s_url").value = supa?.url || "";
+  document.getElementById("s_key").value = supa?.key || "";
+  document.getElementById("syncNote").textContent = "";
+  document.getElementById("syncDisconnect").style.display = supa ? "inline-block" : "none";
+  document.getElementById("syncOverlay").classList.add("open");
+}
+async function connectSync() {
+  const url = document.getElementById("s_url").value.trim().replace(/\/$/, "");
+  const key = document.getElementById("s_key").value.trim();
+  const note = document.getElementById("syncNote");
+  if (!url || !key) { note.textContent = "Paste both the URL and the key."; return; }
+  supa = { url, key };
+  note.textContent = "Connecting…";
+  try {
+    // Read what's in the cloud first — the cloud is the source of truth.
+    const r = await fetch(supa.url + "/rest/v1/items?select=id", { headers: supaHeaders() });
+    if (!r.ok) throw new Error("check " + r.status);
+    const cloudRows = await r.json();
+    const cloudCount = cloudRows.length;
+    const localCount = state.items.length;
+
+    if (cloudCount > 0) {
+      // Cloud already has data -> this device ADOPTS the cloud (replace local). No pushing stale local up.
+      let go = true;
+      if (localCount > 0) {
+        go = confirm("The cloud already has " + cloudCount + " items. This device has " + localCount + ".\n\n" +
+          "OK = use the cloud copy on this device (recommended — keeps all devices identical).\n" +
+          "Cancel = don't connect (so you can back up this device's list first).");
+      }
+      if (!go) { supa = null; note.textContent = "Not connected. Export this device's list first if you want to keep it."; return; }
+      await supaPull(); // replaces local with cloud
+    } else {
+      // Cloud is empty -> seed it once from this device.
+      if (localCount > 0) {
+        note.textContent = "Cloud is empty — uploading this device's " + localCount + " items…";
+        for (const it of state.items) { await supaUpsert(it); }
+      }
+    }
+    localStorage.setItem(SYNC_KEY, JSON.stringify(supa));
+    setSyncDot("on");
+    document.getElementById("syncBanner").style.display = "none";
+    note.textContent = "✓ Connected. The cloud is now the shared source of truth for all devices.";
+    renderView();
+    setTimeout(() => document.getElementById("syncOverlay").classList.remove("open"), 1100);
+  } catch (e) {
+    supa = null;
+    setSyncDot("err");
+    note.textContent = "Couldn't connect — double-check the URL and key, and that you ran the SQL setup. (" + e.message + ")";
+  }
+}
+function disconnectSync() {
+  supa = null;
+  localStorage.removeItem(SYNC_KEY);
+  setSyncDot("");
+  document.getElementById("syncBanner").style.display = "block";
+  document.getElementById("syncOverlay").classList.remove("open");
+}
+
+/* ---- Export / Import ---- */
+function exportData() {
+  const blob = new Blob([JSON.stringify(state.items, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "my-tracker-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+  a.click();
+  localStorage.setItem("myTracker.lastBackup.v1", String(Date.now()));
+}
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const arr = JSON.parse(reader.result);
+      if (!Array.isArray(arr)) throw new Error("bad file");
+      const byId = {};
+      [...state.items, ...arr].forEach(it => { if (it && it.id) byId[it.id] = it; });
+      state.items = Object.values(byId);
+      saveLocal();
+      renderGroups();
+      alert("Imported " + arr.length + " items.");
+      if (supa) supaPull().then(renderGroups).catch(() => {});
+    } catch { alert("That file didn't look like a valid backup."); }
+  };
+  reader.readAsText(file);
+}
+
+/* ---- Clear everything (with backup + confirmation) ---- */
+async function clearAll() {
+  if (!state.items.length) { alert("The tracker is already empty."); return; }
+  const n = state.items.length;
+  const wantBackup = confirm("Download a backup file of your " + n + " items first? (Recommended — Cancel skips the backup.)");
+  if (wantBackup) exportData();
+  const typed = prompt("This deletes ALL " + n + " items" + (supa ? " from this device AND the cloud" : "") + ". This cannot be undone.\n\nType DELETE to confirm:");
+  if (typed !== "DELETE") { alert("Cancelled — nothing was deleted."); return; }
+
+  const ids = state.items.map(x => x.id);
+  state.items = [];
+  saveLocal();
+  // reset seed flags so the preloaded list does NOT silently come back
+  ["v1", "v2", "v3", "v4"].forEach(v => localStorage.removeItem("myTracker.seeded." + v));
+  localStorage.setItem("myTracker.seeded.v4", "cleared"); // mark as intentionally cleared
+  renderView();
+  if (supa) {
+    for (const id of ids) { try { await supaDelete(id); } catch {} }
+    setSyncDot("on");
+  }
+  alert("Done — the tracker is now empty. You can re-import your note or add items fresh.");
+}
+
+/* ---- Shared OMDb lookup ---- */
+async function omdbLookup(title) {
+  const url = "https://www.omdbapi.com/?apikey=" + OMDB_KEY + "&t=" + encodeURIComponent(title);
+  const r = await fetch(url);
+  const d = await r.json();
+  if (d.Response === "False") return null;
+  return {
+    title: d.Title || title,
+    poster: (d.Poster && d.Poster !== "N/A") ? d.Poster : "",
+    year: d.Year ? (d.Year.match(/\d{4}/) || [""])[0] : "",
+    imdb_rating: (d.imdbRating && d.imdbRating !== "N/A") ? d.imdbRating : "",
+    imdb_genre: (d.Genre && d.Genre !== "N/A") ? d.Genre : "",
+    type: (d.Genre || "").toLowerCase().includes("animation") ? "animation" : ""
+  };
+}
+
+/* ---- Bulk import ---- */
+function openBulk() {
+  fillCategorySelect(document.getElementById("bk_category"), state.showStats ? "movies" : state.activeCat);
+  fillBulkStatus();
+  document.getElementById("bk_category").onchange = fillBulkStatus;
+  document.getElementById("bk_titles").value = "";
+  document.getElementById("bulkProgress").textContent = "";
+  document.getElementById("bulkOverlay").classList.add("open");
+}
+function fillBulkStatus() {
+  const cat = document.getElementById("bk_category").value;
+  const sel = document.getElementById("bk_status");
+  sel.innerHTML = "";
+  CATEGORIES[cat].statuses.forEach(s => {
+    const o = document.createElement("option"); o.value = s; o.textContent = s; sel.appendChild(o);
+  });
+}
+async function runBulk() {
+  const cat = document.getElementById("bk_category").value;
+  const status = document.getElementById("bk_status").value;
+  const lines = document.getElementById("bk_titles").value.split("\n").map(s => s.trim()).filter(Boolean);
+  const prog = document.getElementById("bulkProgress");
+  if (!lines.length) { prog.textContent = "Paste at least one title."; return; }
+  let added = 0, notFound = [];
+  let bulkGenre = "";
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    if (/^#/.test(line)) continue;
+    // For movies: a bare non-bulleted line that looks like a genre header sets the genre for following items
+    if (cat === "movies" && /^[A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё\s/&-]{1,40}$/.test(line) &&
+        /коме|семей|драма|рама|трилл|sci|фант|психо|роман|ужас|детек|боев|приключ|комедия|документ|genre|жанр/i.test(line) && !/\d/.test(line)) {
+      bulkGenre = line.trim(); continue;
+    }
+    prog.textContent = "Looking up " + (i + 1) + " of " + lines.length + ": " + line + "…";
+
+    // Books: split "Title - Author" / "«Title» Author" / "Title by Author"
+    let title = line, author = "", poster = "", year = "", rating = "", genre = "", type = "", ru = "";
+    if (cat === "books") {
+      const byMatch = line.match(/^(.*?)\s+by\s+(.+)$/i);
+      const dash = line.match(/^(.*?)\s*[-–—]\s*(.+)$/);
+      if (byMatch) { title = byMatch[1].trim(); author = byMatch[2].trim(); }
+      else if (dash) { title = dash[1].replace(/[«»""]/g, "").trim(); author = dash[2].trim(); }
+      else { title = line.replace(/[«»""]/g, "").trim(); }
+      const info = (await bookSearch(title, author, false))[0];
+      if (info) { poster = info.poster; year = info.year; if (!author && info.author) author = info.author; }
+      else notFound.push(line);
+    } else if (cat === "anime" || cat === "manga") {
+      try { const r = await animeSearch(title, cat === "manga"); if (r.length) { const m = r[0]; poster = m.poster; year = m.year; rating = m.score; genre = m.genres; type = "animation"; if (m.en || m.romaji) title = m.en || m.romaji; ru = m.native || ""; } else notFound.push(line); } catch { notFound.push(line); }
+    } else {
+      try { const r = await tmdbSearch(title, cat === "tv"); if (r.length) { const m = r[0]; poster = m.poster; year = m.year; rating = m.score; if (m.title) title = m.title; } else notFound.push(line); } catch { notFound.push(line); }
+    }
+
+    const item = {
+      id: crypto.randomUUID ? crypto.randomUUID() : "id" + Date.now() + Math.random().toString(16).slice(2),
+      category: cat, status: status,
+      title: title, title_ru: ru || (hasCyrillic(title) ? title : ""),
+      author: author, type: type, poster: poster, year: year,
+      imdb_rating: rating, imdb_genre: genre,
+      my_genre: (cat === "movies" ? bulkGenre : ""), my_rating: "", progress: "", release_date: "", release_sure: false,
+      favourite: false, recommend: false, priority: false, notes: "",
+      primary_lang: hasCyrillic(title) ? "ru" : "en", added: Date.now() + i
+    };
+    state.items.push(item);
+    added++;
+    if (supa) { try { await supaUpsert(item); } catch {} }
+  }
+  saveLocal();
+  renderView();
+  prog.textContent = "✓ Added " + added + " item(s)." + (notFound.length ? " Not found (added with title only): " + notFound.slice(0, 10).join(", ") + (notFound.length > 10 ? "…" : "") : "");
+  if (supa) setSyncDot("on");
+}
+
+/* ---- Smart "paste whole note" importer ---- */
+/*
+  Two-level parse:
+   1) A top BLOCK sets the default category: Книги/Аниме/Сериалы/Манга.
+   2) A SECTION header inside a block sets the status (+ whether items there are "seen").
+  [x] in a seen section -> favourite; in a to-do section -> priority.
+*/
+function classifyNote(text) {
+  const lines = text.split("\n");
+  const items = [];
+  let block = "";     // anime | tv | books | manga
+  let cur = null;     // {cat,status,seen,maybe,poem,anim}
+  let animeSub = "";  // films | series (within anime block)
+
+  const norm = s => s.replace(/\u00a0/g, " ").trim().toLowerCase();
+  const isSep = s => /^[-_—–\s◦•*=]+$/.test(s) || s === "" || s === "￼";
+  let movieGenre = ""; // captured from live-actor genre sub-headers
+
+  function setSection(cat, status, seen, extra) {
+    cur = Object.assign({ cat, status, seen: !!seen }, extra || {});
+    block = cat;
+  }
+
+  for (const raw of lines) {
+    const line = raw.replace(/\u00a0/g, " ");
+    const l = norm(line);
+    if (isSep(l)) continue;
+
+    /* ---- Top block switches (these lines carry no title) ---- */
+    if (l === "аниме") { block = "anime"; cur = null; animeSub = ""; continue; }
+    if (l === "манга") { block = "manga"; setSection("manga", "Finished", true); continue; }
+    if (l === "книги и стихи") { block = "books"; cur = null; continue; }
+    // bare "Сериалы" (no colon) at top level = TV block
+    if (l === "сериалы") { block = "tv"; cur = null; animeSub = ""; continue; }
+    // "Фильмы" at top level = Movies block
+    if (l === "фильмы") { block = "movies"; cur = null; movieGenre = ""; continue; }
+
+    /* ---- Movie sections (only meaningful inside the movies block) ---- */
+    if (block === "movies") {
+      if (/^в кино сейчас/.test(l)) { setSection("movies", "In theatres / soon", false); movieGenre = ""; continue; }
+      if (/^анимация/.test(l)) { setSection("movies", "To watch", false, { anim: true }); movieGenre = ""; continue; }
+      if (/^пересмотреть/.test(l)) { setSection("movies", "Rewatch", false); movieGenre = ""; continue; }
+      if (/^живые актеры/.test(l)) { setSection("movies", "To watch", false); movieGenre = ""; continue; }
+      if (/^просмотрено мультфильмы/.test(l)) { setSection("movies", "Watched", true, { anim: true }); movieGenre = ""; continue; }
+      if (/^просмотрено фильмы/.test(l)) { setSection("movies", "Watched", true); movieGenre = ""; continue; }
+      if (/^смешанное/.test(l)) { movieGenre = ""; continue; }
+      if (/^посмотреть:?$/.test(l)) { setSection("movies", "To watch", false); movieGenre = ""; continue; }
+      if (/^пересмотреть:?/.test(l)) { setSection("movies", "Rewatch", false); movieGenre = ""; continue; }
+      // genre sub-headers under "Живые актеры" (no bullet, short, not a known keyword)
+      if (cur && cur.status === "To watch" && !/^[◦•*\-–—\[]/.test(line.trim()) && !/^\d+\./.test(line.trim()) && l.length < 45
+          && /комеди|семейн|драма|рама|триллер|sci-?fi|психолог|романтик|фантастик|ужас|детектив|боевик|приключен|смешанное|документал/.test(l)) {
+        movieGenre = line.trim(); continue;
+      }
+    }
+
+    /* ---- Anime sub-headers ---- */
+    if (l === "фильмы:" || l === "фильмы" || l === "полнометражные:" || l === "полнометражные") {
+      animeSub = "films";
+      if (block === "anime") setSection("anime", block === "anime" && cur && cur.status === "Watched" ? "Watched" : "To watch", false);
+      continue;
+    }
+    if (l === "сериалы:" ) { animeSub = "series"; continue; }
+
+    /* ---- Section headers (status within a block) ---- */
+    // Books
+    if (/^прочитать/.test(l)) { setSection("books", "To read", false); continue; }
+    if (/^прочитано/.test(l)) { setSection("books", "Read", true); continue; }
+    if (/любимые стихи|любимые поэмы/.test(l)) { setSection("books", "Read", true, { poem: true }); continue; }
+    // Anime statuses
+    if (/^онгоинги/.test(l)) { setSection("anime", "Ongoing", false); continue; }
+    if (/^досмотреть/.test(l)) { setSection("anime", "Finish watching", false); continue; }
+    if (/^пересмотреть/.test(l)) { setSection("anime", "Rewatch", false); continue; }
+    if (/^может выйдет/.test(l)) { setSection("anime", "To be released", false, { maybe: true }); continue; }
+    if (/^выйдет/.test(l)) { setSection("anime", "To be released", false); continue; }
+    // TV-specific "Просмотрено" (live actors / animation) — check BEFORE generic просмотрено
+    if (/живые актеры/.test(l)) { setSection("tv", "Watched", true); continue; }
+    if (/просмотрено анимация/.test(l)) { setSection("tv", "Watched", true, { anim: true }); continue; }
+    // Generic ПРОСМОТРЕНО inside anime block = anime watched
+    if (/^просмотрено/.test(l)) {
+      if (block === "tv") setSection("tv", "Watched", true);
+      else setSection("anime", "Watched", true);
+      continue;
+    }
+    // "Посмотреть:" = to watch (TV or anime depending on block)
+    if (/^посмотреть:?$/.test(l)) { setSection(block === "anime" ? "anime" : "tv", "To watch", false); continue; }
+    // "Досмотреть:" with colon inside TV block
+    if (/^досмотреть:?$/.test(l) && block === "tv") { setSection("tv", "Finish watching", false); continue; }
+
+    /* ---- Otherwise: treat as an item ---- */
+    const checked = /\[x\]/i.test(line);
+    let title = line
+      .replace(/\[x\]/i, "")
+      .replace(/^[\s◦•*\-–—]+/, "")
+      .replace(/^\d+\.\s*/, "")
+      .trim();
+    if (!title || isSep(norm(title))) continue;
+    // an unmatched header line: short, ends with colon
+    if (/:$/.test(title) && title.length < 40) continue;
+
+    // Resolve context
+    let ctx = cur;
+    if (!ctx) {
+      if (block === "anime") ctx = { cat: "anime", status: animeSub === "films" ? "Watched" : "To watch", seen: animeSub === "films" };
+      else if (block === "tv") ctx = { cat: "tv", status: "To watch", seen: false };
+      else if (block === "books") ctx = { cat: "books", status: "To read", seen: false };
+      else if (block === "manga") ctx = { cat: "manga", status: "Finished", seen: true };
+      else ctx = { cat: "movies", status: "To watch", seen: false };
+    }
+    ctx = Object.assign({}, ctx);
+
+    let progress = "", notes = "";
+
+    if (ctx.cat === "manga") {
+      const chap = title.match(/\(([^)]*\d[^)]*)\)/);
+      if (chap) { progress = chap[1].trim(); title = title.replace(chap[0], "").trim(); }
+      if (/not\s*done/i.test(title)) { title = title.replace(/not\s*done/gi, "").trim(); ctx.status = "Reading"; }
+      else if (/\bdone\b/i.test(title)) { ctx.status = "Finished"; }
+      // strip 'done' and any trailing commentary after it
+      title = title.replace(/\bdone\b.*$/i, "").trim();
+    } else {
+      // pull trailing "(...)" as a note (episode lists, day of week)
+      const paren = title.match(/\(([^)]*)\)\s*$/);
+      if (paren) { notes = paren[1].trim(); title = title.replace(paren[0], "").trim(); }
+    }
+
+    // clean punctuation/quotes
+    title = title.replace(/[«»""]/g, "").replace(/\s{2,}/g, " ").replace(/[,;\s]+$/, "").trim();
+    if (!title || title.length < 2) continue;
+
+    // Books: split "«Title» - Author" or "Title Author" heuristically on the dash
+    let author = "";
+    if (ctx.cat === "books") {
+      const dash = title.match(/^(.*?)\s*[-–—]\s*(.+)$/);
+      if (dash) { title = dash[1].replace(/[«»""]/g, "").trim(); author = dash[2].trim(); }
+    }
+
+    if (ctx.maybe) notes = (notes ? notes + "; " : "") + "maybe";
+
+    let favourite = false, priority = false;
+    if (checked) { if (ctx.seen) favourite = true; else priority = true; }
+
+    let status = ctx.status;
+    if (!CATEGORIES[ctx.cat].statuses.includes(status)) status = CATEGORIES[ctx.cat].statuses[0];
+
+    const it = { category: ctx.cat, status, title, progress, notes, favourite, priority, poem: !!ctx.poem };
+    if (author) it.author = author;
+    if (ctx.anim) it.type = "animation";
+    if (ctx.cat === "movies" && movieGenre) it.my_genre = movieGenre;
+    items.push(it);
+  }
+  return items;
+}
+
+let parsedNoteItems = [];
+function previewNote() {
+  const text = document.getElementById("note_text").value;
+  const prev = document.getElementById("notePreview");
+  if (!text.trim()) { document.getElementById("noteProgress").textContent = "Paste your note first."; return; }
+  parsedNoteItems = classifyNote(text);
+  if (!parsedNoteItems.length) { document.getElementById("noteProgress").textContent = "Couldn't find any titles — check the format."; return; }
+  // summarise by category+status
+  const summary = {};
+  parsedNoteItems.forEach(it => {
+    const k = CATEGORIES[it.category].label + " → " + it.status;
+    summary[k] = (summary[k] || 0) + 1;
+  });
+  let html = "<b>Found " + parsedNoteItems.length + " titles:</b><br>";
+  Object.entries(summary).sort().forEach(([k, n]) => { html += "• " + k + ": <b>" + n + "</b><br>"; });
+  html += '<br><span style="color:var(--muted)">Sample (first 8):</span><br>';
+  parsedNoteItems.slice(0, 8).forEach(it => {
+    const flag = it.favourite ? " ⭐" : it.priority ? " 🔺" : "";
+    html += "· " + escapeHtml(it.title) + flag + (it.progress ? " (ch " + escapeHtml(it.progress) + ")" : "") + "<br>";
+  });
+  prev.innerHTML = html;
+  document.getElementById("noteProgress").textContent = "Review the summary, then click Add all.";
+  document.getElementById("noteCommit").style.display = "inline-block";
+}
+async function commitNote() {
+  if (!parsedNoteItems.length) return;
+  const keyOf = (cat, title) => cat + "|" + String(title).trim().toLowerCase();
+  const existing = {};
+  state.items.forEach(it => { existing[keyOf(it.category, it.title)] = it; });
+
+  // find how many parsed items already exist (same category + title)
+  const dupes = parsedNoteItems.filter(p => existing[keyOf(p.category, p.title)]);
+  let mode = "add"; // add | update | skip
+  if (dupes.length) {
+    const choice = prompt(
+      dupes.length + " of these already exist in your tracker.\n\n" +
+      "Type one:\n" +
+      "  UPDATE — refresh the existing ones with the imported info (status, flags, progress, genre)\n" +
+      "  SKIP — keep existing as-is, only add the genuinely new ones\n" +
+      "  ADD — add everything anyway (may create duplicates)",
+      "SKIP"
+    );
+    if (choice === null) { document.getElementById("noteProgress").textContent = "Import cancelled."; return; }
+    const c = choice.trim().toUpperCase();
+    mode = (c === "UPDATE") ? "update" : (c === "ADD") ? "add" : "skip";
+  }
+
+  let added = 0, updated = 0, skipped = 0;
+  const touched = [];
+  parsedNoteItems.forEach((p, i) => {
+    const ex = existing[keyOf(p.category, p.title)];
+    if (ex) {
+      if (mode === "skip") { skipped++; return; }
+      if (mode === "update") {
+        ex.status = p.status;
+        if (p.progress) ex.progress = p.progress;
+        if (p.notes) ex.notes = p.notes;
+        if (p.my_genre) ex.my_genre = p.my_genre;
+        else if (p.poem && !ex.my_genre) ex.my_genre = "Poem";
+        ex.favourite = ex.favourite || p.favourite;
+        ex.priority = ex.priority || p.priority;
+        if (p.type && !ex.type) ex.type = p.type;
+        updated++; touched.push(ex);
+        return;
+      }
+      // mode === add falls through to create a new one
+    }
+    const item = {
+      id: crypto.randomUUID ? crypto.randomUUID() : "id" + Date.now() + Math.random().toString(16).slice(2),
+      category: p.category, status: p.status,
+      title: p.title, title_ru: "", type: p.type || (p.category === "anime" ? "animation" : (p.category === "books" ? (p.poem ? "poem" : "book") : "")),
+      poster: "", year: "", imdb_rating: "", imdb_genre: "",
+      my_genre: p.my_genre || (p.poem ? "Poem" : ""), my_rating: "", progress: p.progress || "",
+      author: p.author || "",
+      release_date: "", release_sure: false,
+      favourite: p.favourite, recommend: false, priority: p.priority,
+      notes: p.notes || "", added: Date.now() + i
+    };
+    state.items.push(item); touched.push(item); added++;
+  });
+  saveLocal();
+  renderView();
+  const summary = "✓ Added " + added + (updated ? ", updated " + updated : "") + (skipped ? ", skipped " + skipped + " existing" : "") + ".";
+  document.getElementById("noteProgress").textContent = summary;
+  document.getElementById("noteCommit").style.display = "none";
+  if (supa && touched.length) {
+    document.getElementById("noteProgress").textContent = summary + " Syncing to cloud…";
+    let ok = 0;
+    for (const it of touched) { try { await supaUpsert(it); ok++; } catch {} }
+    setSyncDot(ok === touched.length ? "on" : "err");
+    document.getElementById("noteProgress").textContent = summary + " Synced " + ok + " to the cloud.";
+  }
+  setTimeout(() => { document.getElementById("noteOverlay").classList.remove("open"); }, 2000);
+}
+
+/* ---- Fetch all from IMDb (batch enrichment) ---- */
+let fetchStopFlag = false;
+function looksEnglish(s) { return /^[\x00-\x7F\s\d\p{P}]+$/u.test(s) || !/[а-яё]/i.test(s); }
+function openFetchAll() {
+  fetchStopFlag = false;
+  document.getElementById("fetchBar").style.width = "0%";
+  const need = state.items.filter(it => !it.poster && !it.imdb_rating).length;
+  document.getElementById("fetchProgress").textContent = need + " item(s) still need details. Click Start.";
+  document.getElementById("fetchStart").style.display = "inline-block";
+  document.getElementById("fetchStop").style.display = "none";
+  document.getElementById("fetchOverlay").classList.add("open");
+}
+async function startFetchAll() {
+  let targets = state.items.filter(it => !it.poster && !it.imdb_rating);
+  if (!targets.length) { document.getElementById("fetchProgress").textContent = "Nothing to fetch — everything already has a poster or rating."; return; }
+
+  fetchStopFlag = false;
+  document.getElementById("fetchStart").style.display = "none";
+  document.getElementById("fetchStop").style.display = "inline-block";
+  let done = 0, found = 0, quotaHit = false;
+  const uncertainList = [];
+  const prog = document.getElementById("fetchProgress");
+  const bar = document.getElementById("fetchBar");
+
+  for (const it of targets) {
+    if (fetchStopFlag) break;
+    done++;
+    prog.textContent = "Fetching " + done + " / " + targets.length + " — " + it.title + " (found so far: " + found + ")";
+    bar.style.width = (done / targets.length * 100) + "%";
+    let filled = false, uncertain = false, cands = null;
+    try {
+      if (it.category === "anime" || it.category === "manga") {
+        const results = await animeSearch(it.title, it.category === "manga");
+        if (results.length) {
+          const m = results[0];
+          if (titleMatches(it.title, [m.en, m.romaji, m.native, ...(m.synonyms || [])])) {
+            if (m.poster) it.poster = m.poster;
+            if (m.year) it.year = m.year;
+            if (m.score) it.imdb_rating = m.score;
+            if (m.genres) it.imdb_genre = m.genres;
+            if (!it.description && m.description) it.description = m.description;
+            if (!it.type) it.type = "animation";
+            if ((m.en || m.romaji) && !hasCyrillic(it.title)) it.title = m.en || m.romaji;
+            else if ((m.en || m.romaji) && hasCyrillic(it.title)) { if (!it.title_ru) it.title_ru = it.title; it.title = m.en || m.romaji; }
+            if (!it.title_ru) { const ru = await wikidataRuTitle(m.en || m.romaji); it.title_ru = ru || m.native || ""; }
+            filled = true;
+          } else { uncertain = true; cands = results.map(r => ({ src: "anilist", raw: r, label: (r.en || r.romaji) + (r.year ? " (" + r.year + ")" : ""), poster: r.poster })); }
+        }
+      } else if (it.category === "movies" || it.category === "tv") {
+        const results = await tmdbSearch(it.title, it.category === "tv");
+        if (results.length) {
+          const m = results[0];
+          if (titleMatches(it.title, [m.title, m.original])) {
+            if (m.poster) it.poster = m.poster;
+            if (m.year) it.year = m.year;
+            if (m.score) it.imdb_rating = m.score;
+            try {
+              const en = await tmdbDetails(m.id, m.isTV, "en-US");
+              const ru = await tmdbDetails(m.id, m.isTV, "ru-RU");
+              if (en && en.genres) it.imdb_genre = en.genres.map(g => g.name).join(", ");
+              if (en && en.overview) it.description = en.overview;
+              if (ru && ru.overview) it.description_ru = ru.overview;
+              const ruTitle = ru ? (m.isTV ? ru.name : ru.title) : "";
+              const enTitle = en ? (m.isTV ? en.name : en.title) : m.title;
+              if (enTitle && !hasCyrillic(it.title)) it.title = enTitle;
+              else if (enTitle && hasCyrillic(it.title)) { it.title = enTitle; }
+              if (ruTitle && ruTitle !== enTitle) it.title_ru = ruTitle;
+            } catch {}
+            filled = true;
+          } else { uncertain = true; cands = results.map(r => ({ src: "tmdb", raw: r, label: r.title + (r.original && r.original !== r.title ? " / " + r.original : "") + (r.year ? " (" + r.year + ")" : ""), poster: r.poster })); }
+        }
+      } else {
+        const results = await bookSearch(it.title, it.author, true);
+        const info = results[0];
+        if (info && titleMatches(it.title, [info.title])) {
+          if (info.poster) it.poster = info.poster;
+          if (info.year) it.year = info.year;
+          if (!it.author && info.author) it.author = info.author;
+          filled = true;
+        } else if (results.length) { uncertain = true; cands = results.map(r => ({ src: "book", raw: r, label: r.title + (r.author ? " — " + r.author : "") + (r.year ? " (" + r.year + ")" : ""), poster: r.poster })); }
+      }
+    } catch {}
+    if (uncertain && cands && cands.length) uncertainList.push({ it, cands });
+    if (filled) {
+      found++;
+      await fillMissingDescriptions(it);
+      saveLocal();
+      if (supa) { try { await supaUpsert(it); } catch {} }
+    }
+  }
+  saveLocal();
+  renderView();
+  if (supa) setSyncDot("on");
+  document.getElementById("fetchStop").style.display = "none";
+  document.getElementById("fetchStart").style.display = "inline-block";
+  let msg = "✓ Done: filled " + found + " of " + done + " confidently.";
+  if (fetchStopFlag) msg = "⏹ Stopped. Filled " + found + " confidently. Progress saved.";
+  prog.textContent = msg;
+  // Now step through the uncertain ones, letting the user pick
+  if (!fetchStopFlag && uncertainList.length) {
+    prog.textContent = msg + " Now reviewing " + uncertainList.length + " uncertain match(es)…";
+    await reviewUncertain(uncertainList);
+    prog.textContent = "✓ All done. Filled " + found + " confidently; reviewed " + uncertainList.length + " uncertain.";
+  }
+}
+
+// Apply a chosen candidate to an item
+async function applyCandidate(it, cand) {
+  const r = cand.raw;
+  if (cand.src === "anilist") {
+    if (r.poster) it.poster = r.poster;
+    if (r.year) it.year = r.year;
+    if (r.score) it.imdb_rating = r.score;
+    if (r.genres) it.imdb_genre = r.genres;
+    if (!it.type) it.type = "animation";
+    if ((r.en || r.romaji) && !hasCyrillic(it.title)) it.title = r.en || r.romaji;
+    if (!it.title_ru) it.title_ru = r.native || "";
+  } else if (cand.src === "tmdb") {
+    if (r.poster) it.poster = r.poster;
+    if (r.year) it.year = r.year;
+    if (r.score) it.imdb_rating = r.score;
+    try {
+      const en = await tmdbDetails(r.id, r.isTV, "en-US");
+      const ru = await tmdbDetails(r.id, r.isTV, "ru-RU");
+      if (en && en.genres) it.imdb_genre = en.genres.map(g => g.name).join(", ");
+      const ruTitle = ru ? (r.isTV ? ru.name : ru.title) : "";
+      const enTitle = en ? (r.isTV ? en.name : en.title) : r.title;
+      if (enTitle) it.title = enTitle;
+      if (ruTitle && ruTitle !== enTitle) it.title_ru = ruTitle;
+    } catch {}
+  } else if (cand.src === "book") {
+    if (r.poster) it.poster = r.poster;
+    if (r.year) it.year = r.year;
+    if (r.author && !it.author) it.author = r.author;
+  }
+  saveLocal();
+  if (supa) { try { await supaUpsert(it); } catch {} }
+}
+
+// Step through uncertain items, one modal at a time, with candidate options
+function reviewUncertain(list) {
+  return new Promise(resolve => {
+    let idx = 0;
+    const ov = document.getElementById("fetchOverlay"); // reuse overlay? no — use detail overlay
+    const modal = document.getElementById("detailModal");
+    const overlay = document.getElementById("detailOverlay");
+    function step() {
+      if (idx >= list.length) { overlay.classList.remove("open"); renderView(); resolve(); return; }
+      const { it, cands } = list[idx];
+      let html = '<h2 style="margin-bottom:6px">Which one is “' + escapeHtml(it.title) + '”?</h2>' +
+        '<p style="color:var(--muted);font-size:12px;margin:0 0 12px">Item ' + (idx + 1) + ' of ' + list.length + ' · ' + CATEGORIES[it.category].label + ' / ' + it.status + '</p>';
+      cands.slice(0, 6).forEach((c, i) => {
+        const poster = c.poster ? '<img class="row-poster" src="' + escapeAttr(c.poster) + '" onerror="this.replaceWith(makeRowPh())" />' : '<div class="row-poster ph">🎬</div>';
+        html += '<div class="row cand-row" data-i="' + i + '" style="margin:6px 0;cursor:pointer">' + poster +
+          '<div class="row-main"><div class="row-title">' + escapeHtml(c.label) + '</div></div></div>';
+      });
+      html += '<div class="modal-actions"><button class="btn" id="candSkip">Skip this one</button><button class="btn" id="candStop">Stop reviewing</button></div>';
+      modal.innerHTML = html;
+      overlay.classList.add("open");
+      modal.querySelectorAll(".cand-row").forEach(row => {
+        row.onclick = async () => { await applyCandidate(it, cands[parseInt(row.dataset.i, 10)]); idx++; step(); };
+      });
+      document.getElementById("candSkip").onclick = () => { idx++; step(); };
+      document.getElementById("candStop").onclick = () => { overlay.classList.remove("open"); renderView(); resolve(); };
+    }
+    step();
+  });
+}
+
+/* ---- Theme (light/dark) ---- */
+const THEME_KEY = "myTracker.theme.v1";
+function applyTheme() {
+  const t = localStorage.getItem(THEME_KEY) || "dark";
+  ["light", "sepia", "rainy", "crimson", "melancholic"].forEach(c => document.body.classList.toggle(c, t === c));
+  const icons = { dark: "🌙 Dark", light: "☀️ Light", sepia: "🍂 Autumn", rainy: "🌧️ Rainy", crimson: "🥀 Crimson", melancholic: "🔮 Electric" };
+  const b = document.getElementById("themeBtn");
+  if (b) b.textContent = icons[t] || "🎨 Theme";
+}
+function setTheme(t) {
+  localStorage.setItem(THEME_KEY, t);
+  applyTheme();
+}
+function toggleTheme() { /* legacy no-op; dropdown used instead */ }
+
+/* ---- Duplicate finder ---- */
+async function findDuplicates() {
+  const seen = {}, dupes = [];
+  state.items.forEach(it => {
+    const k = it.category + "|" + String(it.title).trim().toLowerCase() + "|" + it.status;
+    if (seen[k]) dupes.push(it); else seen[k] = it;
+  });
+  if (!dupes.length) { alert("No duplicates found — every title is unique within its category and status."); return; }
+  const list = dupes.slice(0, 40).map(d => "• " + (CATEGORIES[d.category] ? CATEGORIES[d.category].label : d.category) + " / " + d.status + " — " + d.title).join("\n");
+  const more = dupes.length > 40 ? "\n…and " + (dupes.length - 40) + " more" : "";
+  if (!confirm("Found " + dupes.length + " duplicate entr" + (dupes.length === 1 ? "y" : "ies") +
+    " (same title, category & status):\n\n" + list + more + "\n\nRemove the extras, keeping one of each?")) return;
+  const ids = new Set(dupes.map(d => d.id));
+  state.items = state.items.filter(x => !ids.has(x.id));
+  saveLocal();
+  renderView();
+  if (supa) { for (const id of ids) { try { await supaDelete(id); } catch {} } setSyncDot("on"); syncFlash(true); }
+  alert("Removed " + dupes.length + " duplicate(s).");
+}
+
+/* ---- Backup reminder ---- */
+const BACKUP_KEY = "myTracker.lastBackup.v1";
+function maybeBackupReminder() {
+  if (state.items.length < 20) return;          // only once there's real data
+  if (supa) return;                             // synced users have a cloud copy already
+  const last = parseInt(localStorage.getItem(BACKUP_KEY) || "0", 10);
+  const days = last ? (Date.now() - last) / 86400000 : 999;
+  if (days < 14) return;
+  const el = document.getElementById("syncFlash");
+  if (el) { el.textContent = "💾 Tip: Export a backup (it's been a while)"; el.style.background = "var(--warn)"; el.classList.add("show");
+    setTimeout(() => el.classList.remove("show"), 3500); }
+}
+
+/* ---- Books import (Status | Title | Author | extras) ---- */
+async function importBooks() {
+  const lines = document.getElementById("books_text").value.split("\n").map(s => s.trim()).filter(Boolean);
+  const prog = document.getElementById("booksProgress");
+  if (!lines.length) { prog.textContent = "Paste at least one line."; return; }
+  const VALID = CATEGORIES.books.statuses;
+  let added = 0; const bad = []; const touched = [];
+  lines.forEach((ln, i) => {
+    if (/^#/.test(ln)) return;
+    const parts = ln.split("|").map(s => s.trim());
+    if (parts.length < 2) { bad.push(ln); return; }
+    const status = parts[0], title = parts[1], author = parts[2] || "", extra = parts[3] || "";
+    const st = VALID.find(v => v.toLowerCase() === status.toLowerCase()) || "To read";
+    let fav = false, progress = "";
+    if (extra) { if (/\bfav\b/i.test(extra)) fav = true; const p = extra.replace(/\bfav\b/i, "").trim(); if (p) progress = p; }
+    const item = {
+      id: crypto.randomUUID ? crypto.randomUUID() : "id" + Date.now() + Math.random().toString(16).slice(2),
+      category: "books", status: st, title: title, title_ru: hasCyrillic(title) ? title : "",
+      author: author, type: "", poster: "", year: "", imdb_rating: "", imdb_genre: "",
+      my_genre: "", my_rating: "", progress: progress, release_date: "", release_sure: false,
+      favourite: fav, recommend: false, priority: false, notes: "",
+      primary_lang: hasCyrillic(title) ? "ru" : "en", added: Date.now() + i
+    };
+    state.items.push(item); touched.push(item); added++;
+  });
+  saveLocal(); renderView();
+  prog.textContent = "\u2713 Added " + added + " book(s)." + (bad.length ? " Skipped " + bad.length + " malformed line(s)." : "");
+  if (supa && touched.length) { for (const it of touched) { try { await supaUpsert(it); } catch {} } setSyncDot("on"); }
+  setTimeout(() => document.getElementById("booksOverlay").classList.remove("open"), 1800);
+}
+
+/* ---- Multi-select + bulk actions ---- */
+function toggleSelectMode() {
+  state.selectMode = !state.selectMode;
+  if (!state.selectMode) state.selected = {};
+  document.getElementById("bulkBar").style.display = state.selectMode ? "flex" : "none";
+  document.getElementById("selectBtn").textContent = state.selectMode ? "✖ Done selecting" : "☑ Select";
+  renderGroups();
+  updateBulkCount();
+}
+function paintSelection(ids) {
+  // update only the affected cards' selected class + check glyph, no full re-render
+  (ids || Object.keys(state.selected)).forEach(id => {
+    const el = document.querySelector('.card[data-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
+    if (!el) return;
+    const on = !!state.selected[id];
+    el.classList.toggle("selected", on);
+    const chk = el.querySelector(".sel-check");
+    if (chk) chk.textContent = on ? "☑" : "☐";
+  });
+}
+function toggleSelect(id, shift) {
+  if (shift && state._lastSelId && window._visibleOrder) {
+    const order = window._visibleOrder;
+    const a = order.indexOf(state._lastSelId), b = order.indexOf(id);
+    if (a !== -1 && b !== -1) {
+      const [lo, hi] = a < b ? [a, b] : [b, a];
+      const changed = [];
+      for (let i = lo; i <= hi; i++) { state.selected[order[i]] = true; changed.push(order[i]); }
+      paintSelection(changed); updateBulkCount(); return;
+    }
+  }
+  if (state.selected[id]) delete state.selected[id]; else state.selected[id] = true;
+  state._lastSelId = id;
+  paintSelection([id]);
+  updateBulkCount();
+}
+function selectedItems() { return state.items.filter(it => state.selected[it.id]); }
+function updateBulkCount() {
+  const n = Object.keys(state.selected).length;
+  const el = document.getElementById("bulkCount"); if (el) el.textContent = n + " selected";
+}
+async function bulkPersist(items) {
+  saveLocal(); renderGroups();
+  if (supa) { for (const it of items) { try { await supaUpsert(it); } catch {} } setSyncDot("on"); syncFlash(true); }
+  else syncFlash(true);
+}
+async function bulkChangeStatus() {
+  const items = selectedItems(); if (!items.length) return;
+  // statuses valid for ALL selected (intersection); fall back to the first item's category set
+  const cats = [...new Set(items.map(i => i.category))];
+  let statuses = CATEGORIES[cats[0]].statuses;
+  cats.forEach(c => { statuses = statuses.filter(s => CATEGORIES[c].statuses.includes(s)); });
+  if (!statuses.length) { alert("Selected items are from categories with no shared status — select within one category to change status."); return; }
+  const choice = prompt("Change status of " + items.length + " item(s) to one of:\n\n" + statuses.join("\n") + "\n\nType it exactly:");
+  if (!choice || !statuses.includes(choice.trim())) { if (choice !== null) alert("That status isn't valid for all selected."); return; }
+  items.forEach(it => it.status = choice.trim());
+  await bulkPersist(items);
+}
+async function bulkSetPoster() {
+  const items = selectedItems(); if (!items.length) return;
+  const url = prompt("Set this poster URL for all " + items.length + " selected item(s):", "");
+  if (url === null) return;
+  items.forEach(it => it.poster = url.trim());
+  await bulkPersist(items);
+}
+async function bulkDelete() {
+  const items = selectedItems(); if (!items.length) return;
+  if (!confirm("Delete " + items.length + " selected item(s)? This cannot be undone.")) return;
+  const ids = new Set(items.map(i => i.id));
+  state.items = state.items.filter(x => !ids.has(x.id));
+  state.selected = {};
+  saveLocal(); renderGroups(); updateBulkCount();
+  if (supa) { for (const id of ids) { try { await supaDelete(id); } catch {} } setSyncDot("on"); syncFlash(true); }
+}
+async function bulkFetch() {
+  const items = selectedItems(); if (!items.length) return;
+  const prog = document.getElementById("bulkCount");
+  let n = 0, found = 0; const uncertainList = [];
+  for (const it of items) {
+    prog.textContent = "Fetching " + (++n) + "/" + items.length + "…";
+    let filled = false, cands = null;
+    try {
+      if (it.category === "anime" || it.category === "manga") {
+        const r = await animeSearch(it.title, it.category === "manga");
+        if (r.length) {
+          const m = r[0];
+          if (titleMatches(it.title, [m.en, m.romaji, m.native, ...(m.synonyms || [])])) {
+            if (m.poster) it.poster = m.poster; if (m.year) it.year = m.year; if (m.score) it.imdb_rating = m.score; if (m.genres) it.imdb_genre = m.genres; if (!it.type) it.type = "animation";
+            if ((m.en || m.romaji) && !hasCyrillic(it.title)) it.title = m.en || m.romaji;
+            if (!it.title_ru) it.title_ru = m.native || "";
+            filled = true;
+          } else cands = r.map(x => ({ src: "anilist", raw: x, label: (x.en || x.romaji) + (x.year ? " (" + x.year + ")" : ""), poster: x.poster }));
+        }
+      } else if (it.category === "movies" || it.category === "tv") {
+        const r = await tmdbSearch(it.title, it.category === "tv");
+        if (r.length) {
+          const m = r[0];
+          if (titleMatches(it.title, [m.title, m.original])) {
+            if (m.poster) it.poster = m.poster; if (m.year) it.year = m.year; if (m.score) it.imdb_rating = m.score;
+            try { const en = await tmdbDetails(m.id, m.isTV, "en-US"); const ru = await tmdbDetails(m.id, m.isTV, "ru-RU");
+              if (en && en.genres) it.imdb_genre = en.genres.map(g => g.name).join(", ");
+              if (en && en.overview) it.description = en.overview;
+              if (ru && ru.overview) it.description_ru = ru.overview;
+              const ruTitle = ru ? (m.isTV ? ru.name : ru.title) : ""; const enTitle = en ? (m.isTV ? en.name : en.title) : m.title;
+              if (enTitle) it.title = enTitle; if (ruTitle && ruTitle !== enTitle) it.title_ru = ruTitle;
+            } catch {}
+            filled = true;
+          } else cands = r.map(x => ({ src: "tmdb", raw: x, label: x.title + (x.year ? " (" + x.year + ")" : ""), poster: x.poster }));
+        }
+      } else {
+        const results = await bookSearch(it.title, it.author, true);
+        const info = results[0];
+        if (info && titleMatches(it.title, [info.title])) { if (info.poster) it.poster = info.poster; if (info.year) it.year = info.year; if (!it.author && info.author) it.author = info.author; filled = true; }
+        else if (results.length) cands = results.map(r => ({ src: "book", raw: r, label: r.title + (r.author ? " — " + r.author : ""), poster: r.poster }));
+      }
+    } catch {}
+    if (filled) { found++; await fillMissingDescriptions(it); saveLocal(); if (supa) { try { await supaUpsert(it); } catch {} } }
+    else if (cands && cands.length) uncertainList.push({ it, cands });
+  }
+  saveLocal(); renderGroups(); updateBulkCount();
+  prog.textContent = found + " filled." + (uncertainList.length ? " Reviewing " + uncertainList.length + " uncertain…" : "");
+  if (uncertainList.length) await reviewUncertain(uncertainList);
+  if (supa) setSyncDot("on");
+  syncFlash(true);
+}
+
+/* ---- Wire up ---- */
+function init() {
+  loadLocal();
+  renderTabs();
+  requestAnimationFrame(() => renderView());  // defer heavy card render so UI is interactive first
+  setSyncDot(supa ? "on" : "");
+  const _sb = document.getElementById("syncBanner"); if (_sb) _sb.style.display = supa ? "none" : "block";
+
+  document.getElementById("addBtn").onclick = () => openEditor(null);
+  document.getElementById("saveBtn").onclick = saveItem;
+  document.getElementById("cancelBtn").onclick = closeEditor;
+  document.getElementById("deleteBtn").onclick = deleteItem;
+  document.getElementById("f_search").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); autofill(); } });
+  document.getElementById("f_status").addEventListener("change", toggleReleaseField);
+
+  // Add an Auto-fill button next to the search box dynamically
+  const af = document.createElement("button");
+  af.className = "btn small"; af.textContent = "🔎 Search & auto-fill"; af.style.marginTop = "6px";
+  af.onclick = autofill;
+  document.getElementById("autofillNote").parentElement.insertBefore(af, document.getElementById("autofillNote"));
+
+  document.getElementById("f_category").onchange = e => fillStatusSelect(e.target.value, null);
+
+  document.getElementById("search").oninput = e => { state.filter = e.target.value; renderGroups(); };
+  document.getElementById("sortSel").onchange = e => { state.sort = e.target.value; renderGroups(); };
+  document.getElementById("favOnly").onchange = e => { state.favOnly = e.target.checked; renderGroups(); };
+  document.getElementById("recOnly").onchange = e => { state.recOnly = e.target.checked; renderGroups(); };
+  document.getElementById("priOnly").onchange = e => { state.priOnly = e.target.checked; renderGroups(); };
+
+  // View mode (cards / list) + size controls
+  document.querySelectorAll("#viewModeSeg button").forEach(btn => {
+    btn.onclick = () => { state.viewMode = btn.dataset.mode; saveView(); renderSizeControls(); renderGroups(); };
+  });
+  renderSizeControls();
+
+  document.getElementById("syncBtn").onclick = openSync;
+  document.getElementById("syncConnect").onclick = connectSync;
+  document.getElementById("syncCancel").onclick = () => document.getElementById("syncOverlay").classList.remove("open");
+  document.getElementById("syncDisconnect").onclick = disconnectSync;
+
+  document.getElementById("exportBtn").onclick = exportData;
+  const themeBtn = document.getElementById("themeBtn"), themeMenu = document.getElementById("themeMenu");
+  themeBtn.onclick = (e) => { e.stopPropagation(); themeMenu.style.display = themeMenu.style.display === "none" ? "block" : "none"; };
+  themeMenu.querySelectorAll("button[data-theme]").forEach(b => { b.onclick = () => { setTheme(b.dataset.theme); themeMenu.style.display = "none"; }; });
+  document.addEventListener("click", () => { if (themeMenu) themeMenu.style.display = "none"; });
+  document.getElementById("dupeBtn").onclick = findDuplicates;
+
+  // Language toggle
+  document.querySelectorAll("#langSeg button").forEach(btn => {
+    btn.onclick = () => { state.lang = btn.dataset.lang; saveLang(); renderLangSeg(); renderGroups(); };
+  });
+  renderLangSeg();
+
+  // Multi-select + bulk actions
+  document.getElementById("selectBtn").onclick = toggleSelectMode;
+  document.getElementById("bulkStatusBtn").onclick = bulkChangeStatus;
+  document.getElementById("bulkPosterBtn").onclick = bulkSetPoster;
+  document.getElementById("bulkFetchBtn").onclick = bulkFetch;
+  document.getElementById("bulkDeleteBtn").onclick = bulkDelete;
+  document.getElementById("bulkClearBtn").onclick = () => { const ids = Object.keys(state.selected); state.selected = {}; paintSelection(ids); updateBulkCount(); };
+  document.getElementById("importBtn").onclick = () => document.getElementById("importFile").click();
+  document.getElementById("importFile").onchange = e => { if (e.target.files[0]) importData(e.target.files[0]); e.target.value = ""; };
+  document.getElementById("clearAllBtn").onclick = () => { document.getElementById("moreMenu").style.display = "none"; clearAll(); };
+  const moreBtn = document.getElementById("moreBtn"), moreMenu = document.getElementById("moreMenu");
+  moreBtn.onclick = (e) => { e.stopPropagation(); moreMenu.style.display = moreMenu.style.display === "none" ? "block" : "none"; };
+  document.addEventListener("click", () => { if (moreMenu) moreMenu.style.display = "none"; });
+
+  // Add dropdown menu
+  const addBtnMenu = document.getElementById("addBtnMenu"), addMenu = document.getElementById("addMenu");
+  addBtnMenu.onclick = (e) => { e.stopPropagation(); addMenu.style.display = addMenu.style.display === "none" ? "block" : "none"; };
+  addMenu.addEventListener("click", () => { addMenu.style.display = "none"; });
+  document.addEventListener("click", () => { if (addMenu) addMenu.style.display = "none"; });
+
+  // Unlock to edit / lock editing
+  document.getElementById("unlockEditBtn").onclick = () => { requestEdit(); updateEditButton(); };
+  updateEditButton();
+  document.getElementById("adminBtn").onclick = toggleAdmin;
+
+  // Fetch all from IMDb
+  document.getElementById("fetchAllBtn").onclick = openFetchAll;
+  document.getElementById("fetchStart").onclick = startFetchAll;
+  document.getElementById("fetchStop").onclick = () => { fetchStopFlag = true; };
+  document.getElementById("fetchClose").onclick = () => { fetchStopFlag = true; document.getElementById("fetchOverlay").classList.remove("open"); };
+  document.getElementById("fetchOverlay").addEventListener("click", e => { if (e.target.id === "fetchOverlay") { fetchStopFlag = true; document.getElementById("fetchOverlay").classList.remove("open"); } });
+
+  // Bulk add
+  document.getElementById("bulkBtn").onclick = openBulk;
+  document.getElementById("bulkRun").onclick = runBulk;
+  document.getElementById("bulkCancel").onclick = () => document.getElementById("bulkOverlay").classList.remove("open");
+
+  // Smart note import
+  document.getElementById("noteBtn").onclick = () => {
+    document.getElementById("note_text").value = "";
+    document.getElementById("notePreview").innerHTML = "";
+    document.getElementById("noteProgress").textContent = "";
+    document.getElementById("noteCommit").style.display = "none";
+    document.getElementById("noteOverlay").classList.add("open");
+  };
+  document.getElementById("notePreviewBtn").onclick = previewNote;
+  document.getElementById("booksBtn").onclick = () => { document.getElementById("books_text").value = ""; document.getElementById("booksProgress").textContent = ""; document.getElementById("booksOverlay").classList.add("open"); };
+  document.getElementById("booksAdd").onclick = importBooks;
+  document.getElementById("booksCancel").onclick = () => document.getElementById("booksOverlay").classList.remove("open");
+  document.getElementById("booksOverlay").addEventListener("click", e => { if (e.target.id === "booksOverlay") document.getElementById("booksOverlay").classList.remove("open"); });
+  document.getElementById("noteCommit").onclick = commitNote;
+  document.getElementById("noteCancel").onclick = () => document.getElementById("noteOverlay").classList.remove("open");
+  document.getElementById("noteOverlay").addEventListener("click", e => { if (e.target.id === "noteOverlay") document.getElementById("noteOverlay").classList.remove("open"); });
+
+  // close modals on backdrop click
+  document.getElementById("editorOverlay").addEventListener("click", e => { if (e.target.id === "editorOverlay") closeEditor(); });
+  document.getElementById("syncOverlay").addEventListener("click", e => { if (e.target.id === "syncOverlay") document.getElementById("syncOverlay").classList.remove("open"); });
+  document.getElementById("bulkOverlay").addEventListener("click", e => { if (e.target.id === "bulkOverlay") document.getElementById("bulkOverlay").classList.remove("open"); });
+  document.getElementById("detailOverlay").addEventListener("click", e => { if (e.target.id === "detailOverlay") document.getElementById("detailOverlay").classList.remove("open"); });
+
+  // If synced, the CLOUD is the source of truth: pull and replace local on every load.
+  if (supa) {
+    setSyncDot("");
+    supaPull().then(() => { renderView(); setSyncDot("on"); }).catch(() => setSyncDot("err"));
+  }
+
+  // Every device starts view-only unless still within the 15-min unlock grace on THIS device.
+  canEdit = withinUnlockGrace();
+  applyEditMode();
+  updateEditButton();
+}
+window.makePlaceholder = makePlaceholder;
+window.makeRowPh = makeRowPh;
+
+// Boot: view is always open. Editing is gated by the shared password.
+// No built-in list — add everything via the 📥 Import note button.
+loadLocal();
+loadView();
+applyTheme();
+init();
+setTimeout(maybeBackupReminder, 1500);
+</script>
+</body>
+</html>
