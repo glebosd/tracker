@@ -64,6 +64,8 @@
   }
   .top-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   h1 { font-size: 20px; margin: 0; letter-spacing: 0.2px; }
+  h1.editable-title { cursor: text; border-bottom: 1px dashed var(--accent); padding-bottom: 1px; outline: none; }
+  h1.editable-title:focus { border-bottom-style: solid; }
   .sync-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
   .sync-dot.on { background: var(--good); box-shadow: 0 0 8px var(--good); }
   .sync-dot.err { background: var(--danger); }
@@ -131,6 +133,10 @@
   .genre-head { font-size: 12px; color: var(--accent-2); margin: 12px 0 6px; font-weight: 600; letter-spacing: .3px; }
   .genre-head.collapsible { cursor: pointer; user-select: none; }
   .genre-head.collapsible:hover { color: var(--text); }
+  /* touch+mouse reorder feedback */
+  .dragging { opacity: 0.5; }
+  .reorder-over { outline: 2px dashed var(--accent); outline-offset: 2px; border-radius: 8px; }
+  body.reordering { user-select: none; -webkit-user-select: none; }
   .genre-head .caret { font-size: 11px; }
 
   /* Sync flash toast */
@@ -193,7 +199,9 @@
 
   /* Multi-select */
   .card.selected { outline: 2px solid var(--accent); }
-  .sel-check { position: absolute; top: 6px; left: 6px; font-size: 18px; background: rgba(0,0,0,0.6); border-radius: 6px; padding: 0 4px; z-index: 3; }
+  .sel-check { position: absolute; top: 6px; left: 6px; font-size: 22px; background: rgba(0,0,0,0.6); border-radius: 8px; padding: 1px 6px; z-index: 3; color: #fff; }
+  .card.selecting { cursor: pointer; }
+  .card.selecting .poster-wrap { pointer-events: none; }
   #bulkBar {
     position: sticky; top: 92px; z-index: 15; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
     background: var(--panel-2); border-bottom: 1px solid var(--border); padding: 8px 16px; font-size: 13px;
@@ -299,6 +307,12 @@
     .status-groups, .stats-wrap { padding: 0 12px; }
     .fab { width: 52px; height: 52px; font-size: 26px; right: 14px; bottom: 14px; }
     .view-controls { width: 100%; }
+    /* organic spacing between section headers and their items */
+    .group-head { margin: 10px 0 14px; }
+    .genre-head { margin: 16px 0 10px; }
+    .group { margin-bottom: 26px; }
+    /* keep search text from sliding under the 🌐 button */
+    .search-wrap input { padding-right: 46px; }
   }
   .group-count { background: var(--panel-2); border: 1px solid var(--border); border-radius: 999px; font-size: 11px; padding: 1px 8px; color: var(--muted); }
 
@@ -358,7 +372,9 @@
   .banner a { color: var(--accent-2); }
 
   @media (max-width: 520px) {
-    .cards { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+    .cards.size-medium { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+    .cards.size-small  { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 9px; }
+    .cards.size-tiny   { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));  gap: 7px; }
     .grid2 { grid-template-columns: 1fr; }
   }
 
@@ -399,12 +415,16 @@
   body.can-edit #viewBadge { display: none; }
 
   /* Card size variants (applied on .cards) */
-  .cards.size-small  { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+  .cards.size-tiny   { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));  gap: 8px; }
+  .cards.size-small  { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
   .cards.size-medium { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
-  .cards.size-large  { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+  .cards.size-tiny .card-title { font-size: 11px; -webkit-line-clamp: 2; }
+  .cards.size-tiny .card-body { padding: 6px 7px 8px; gap: 2px; }
+  .cards.size-tiny .card-meta, .cards.size-tiny .card-ru { font-size: 9px; }
+  .cards.size-tiny .stars { font-size: 11px; }
+  .cards.size-tiny .card-actions { transform: scale(0.85); transform-origin: bottom right; }
   .cards.size-small .card-title { font-size: 12px; }
   .cards.size-small .card-meta, .cards.size-small .card-ru { font-size: 10px; }
-  .cards.size-large .card-title { font-size: 16px; }
 
   /* List view */
   .list { display: flex; flex-direction: column; gap: 8px; }
@@ -413,7 +433,14 @@
     border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; cursor: pointer;
   }
   .row:hover { border-color: var(--accent); }
+  .row.selected { outline: 2px solid var(--accent); }
+  .row-check { flex: none; font-size: 20px; color: var(--accent); margin-left: 4px; }
   .row-poster { width: 40px; height: 60px; flex: none; border-radius: 5px; object-fit: cover; background: var(--panel-2); }
+  .row-poster.book { padding: 0; overflow: hidden; position: relative; }
+  .row-poster.book .book-cover { position: absolute; inset: 0; width: 100%; height: 100%; padding: 5px 4px; }
+  .row-poster.book .bc-title { font-size: 8px !important; line-height: 1.1; -webkit-line-clamp: 4; }
+  .row-poster.book .bc-mark { font-size: 9px; }
+  .row-poster.book .bc-author { font-size: 6px !important; padding-top: 2px; -webkit-line-clamp: 1; }
   .row-poster.ph { display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--muted); }
   .row-main { flex: 1; min-width: 0; }
   .row-title { font-weight: 600; font-size: 14px; }
@@ -455,7 +482,7 @@
 <header>
   <div class="top-row">
     <span class="sync-dot" id="syncDot" title="Sync status"></span>
-    <h1>My Tracker</h1>
+    <h1 id="appTitle">My Tracker</h1>
     <span class="viewbadge" id="viewBadge">👁 View only</span>
     <span class="seg" id="langSeg" style="margin-left:8px">
       <button data-lang="both">Both</button>
@@ -502,6 +529,7 @@
 
 <div id="bulkBar" style="display:none">
   <span id="bulkCount">0 selected</span>
+  <button class="btn small" id="bulkSelectAllBtn">☑ Select all</button>
   <button class="btn small" id="bulkEditBtn">✎ Edit selected</button>
   <button class="btn small" id="bulkFetchBtn">Fetch info + verify</button>
   <button class="btn small" id="bulkDeleteBtn" style="color:var(--danger)">Delete</button>
@@ -843,6 +871,99 @@ function saveStatusOrder(catKey, arr) {
   localStorage.setItem(STORDER_KEY, JSON.stringify(map));
 }
 
+/* ---- Subgroup (genre / Films-Series / Animation split) ordering ---- */
+const SUBORDER_KEY = "myTracker.subOrder.v1";
+function getSubOrder(bucket) {
+  try { const m = JSON.parse(localStorage.getItem(SUBORDER_KEY) || "{}"); return m[bucket] || []; } catch { return []; }
+}
+function saveSubOrder(bucket, arr) {
+  let m = {};
+  try { m = JSON.parse(localStorage.getItem(SUBORDER_KEY) || "{}"); } catch {}
+  m[bucket] = arr;
+  localStorage.setItem(SUBORDER_KEY, JSON.stringify(m));
+}
+// Sort a list of {key,...} entries by the saved order for a bucket (unknown keys keep their natural order, appended).
+function applySubOrder(bucket, keys) {
+  const saved = getSubOrder(bucket);
+  const known = saved.filter(k => keys.includes(k));
+  keys.forEach(k => { if (!known.includes(k)) known.push(k); });
+  return known;
+}
+
+/* Keep an opened dropdown menu fully within the viewport (mobile: never off-screen). */
+function clampMenu(menu) {
+  if (!menu) return;
+  // reset any prior override, then measure
+  menu.style.maxWidth = Math.min(window.innerWidth - 16, 320) + "px";
+  const pad = 8;
+  const parent = menu.offsetParent || document.body;
+  const pRect = parent.getBoundingClientRect();
+  const r = menu.getBoundingClientRect();
+  // horizontal: shift so the menu's left/right edges stay within [pad, innerWidth-pad]
+  let overRight = r.right - (window.innerWidth - pad);
+  let overLeft = pad - r.left;
+  if (overRight > 0) {
+    // move left by overRight (convert to a left offset relative to parent)
+    menu.style.right = "auto";
+    menu.style.left = Math.max(pad - pRect.left, r.left - pRect.left - overRight) + "px";
+  } else if (overLeft > 0) {
+    menu.style.right = "auto";
+    menu.style.left = (r.left - pRect.left + overLeft) + "px";
+  }
+}
+
+/* ---- Touch + mouse drag-to-reorder (HTML5 DnD doesn't work on phones) ----
+   Attach to a handle element. onReorder(fromKey, toKey) is called when dropped
+   over another element in the same group carrying data-reorder-key.        */
+function makeReorderable(el, key, groupSelector, onReorder) {
+  el.dataset.reorderKey = key;
+  el.style.touchAction = "none"; // let us handle the gesture
+  let dragging = false, startX = 0, startY = 0, ghost = null, lastTarget = null;
+  const THRESH = 6;
+  el.addEventListener("pointerdown", (e) => {
+    if (!document.body.classList.contains("admin")) return;
+    if (e.button != null && e.button !== 0) return;
+    startX = e.clientX; startY = e.clientY;
+    let moved = false;
+    const onMove = (ev) => {
+      const dx = ev.clientX - startX, dy = ev.clientY - startY;
+      if (!moved && Math.hypot(dx, dy) < THRESH) return;
+      if (!moved) {
+        moved = true; dragging = true;
+        try { el.setPointerCapture(e.pointerId); } catch {}
+        el.classList.add("dragging");
+        document.body.classList.add("reordering");
+      }
+      ev.preventDefault();
+      // find element under pointer that is a reorder target in the same group
+      el.style.pointerEvents = "none";
+      const under = document.elementFromPoint(ev.clientX, ev.clientY);
+      el.style.pointerEvents = "";
+      const tgt = under && under.closest(groupSelector + "[data-reorder-key]");
+      document.querySelectorAll(groupSelector + ".reorder-over").forEach(x => x.classList.remove("reorder-over"));
+      if (tgt && tgt !== el) { tgt.classList.add("reorder-over"); lastTarget = tgt; }
+      else lastTarget = null;
+    };
+    const onUp = (ev) => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+      document.removeEventListener("pointercancel", onUp);
+      el.classList.remove("dragging");
+      document.body.classList.remove("reordering");
+      document.querySelectorAll(groupSelector + ".reorder-over").forEach(x => x.classList.remove("reorder-over"));
+      if (dragging && lastTarget) {
+        const toKey = lastTarget.dataset.reorderKey;
+        dragging = false;
+        if (toKey && toKey !== key) { onReorder(key, toKey); return; }
+      }
+      dragging = false;
+    };
+    document.addEventListener("pointermove", onMove, { passive: false });
+    document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onUp);
+  });
+}
+
 /* ---- Language display + note translation ---- */
 const LANG_KEY = "myTracker.lang.v1";
 const TRCACHE_KEY = "myTracker.trcache.v1";
@@ -867,14 +988,13 @@ function applyUiLang() {
   T("noteBtn", "📥 Import note", "📥 Импорт заметки");
   T("booksBtn", "📚 Import books", "📚 Импорт книг");
   T("importBtn", "📂 Import file (backup)", "📂 Импорт файла");
-  // unlock / admin buttons reflect state; let their own updaters handle text, only translate when in known base state
-  const ue = document.getElementById("unlockEditBtn");
-  if (ue && /Unlock to edit|Разблокировать|Lock editing|Заблокировать/.test(ue.textContent)) {
-    const locked = /Unlock|Разблок/.test(ue.textContent);
-    ue.textContent = locked ? (ru ? "🔓 Разблокировать" : "🔓 Unlock to edit") : (ru ? "🔒 Заблокировать" : "🔒 Lock editing");
-  }
-  const ab = document.getElementById("adminBtn");
-  if (ab) { const on = /exit|Выйти|✓/.test(ab.textContent); ab.textContent = on ? (ru ? "⚙ Выйти из админа" : "⚙ Exit admin") : (ru ? "⚙ Режим админа" : "⚙ Admin mode"); }
+  T("bulkEditBtn", "✎ Edit selected", "✎ Изменить выбранное");
+  T("bulkFetchBtn", "Fetch info + verify", "Загрузить данные");
+  T("bulkDeleteBtn", "Delete", "Удалить");
+  T("bulkClearBtn", "Clear selection", "Снять выбор");
+  // unlock / admin buttons: their own updaters are now language-aware
+  if (typeof updateEditButton === "function") updateEditButton();
+  if (typeof updateAdminButton === "function") updateAdminButton();
   const vb = document.getElementById("viewBadge"); if (vb) vb.textContent = ru ? "👁 Просмотр" : "👁 View only";
   const si = document.getElementById("search"); if (si) si.placeholder = ru ? "Поиск: названия, жанры, заметки…" : "Search titles, genres, notes…";
   // sort dropdown options
@@ -892,6 +1012,8 @@ function applyUiLang() {
     if (b.dataset.mode === "cards") b.textContent = ru ? "▦ Карточки" : "▦ Cards";
     if (b.dataset.mode === "list") b.textContent = ru ? "☰ Список" : "☰ List";
   });
+  if (typeof renderSizeControls === "function") renderSizeControls();
+  if (typeof updateBulkCount === "function") updateBulkCount();
 }
 function displayTitle(it) {
   if (state.lang === "ru") return it.title_ru || it.title || "";
@@ -1003,13 +1125,48 @@ function loadView() {
   try {
     const v = JSON.parse(localStorage.getItem(VIEW_KEY) || "null");
     if (v) { state.viewMode = v.viewMode || "cards"; state.cardSize = v.cardSize || "medium"; state.listSize = v.listSize || "normal"; }
+    if (state.cardSize === "large") state.cardSize = "medium"; // L removed
   } catch {}
 }
 function saveView() {
   localStorage.setItem(VIEW_KEY, JSON.stringify({ viewMode: state.viewMode, cardSize: state.cardSize, listSize: state.listSize }));
 }
-const CARD_SIZES = [["small", "S"], ["medium", "M"], ["large", "L"]];
-const LIST_SIZES = [["compact", "Compact"], ["normal", "Normal"], ["roomy", "Roomy"]];
+
+/* ---- Custom app title (editable in admin mode) ---- */
+const TITLE_KEY = "myTracker.title.v1";
+function getAppTitle() { return localStorage.getItem(TITLE_KEY) || "My Tracker"; }
+function applyAppTitle() {
+  const h = document.getElementById("appTitle");
+  if (h && h.textContent !== getAppTitle()) h.textContent = getAppTitle();
+  document.title = getAppTitle();
+}
+function setupTitleEditing() {
+  const h = document.getElementById("appTitle");
+  if (!h) return;
+  applyAppTitle();
+  // reflect admin state each render
+  const sync = () => {
+    const on = document.body.classList.contains("admin");
+    h.contentEditable = on ? "true" : "false";
+    h.classList.toggle("editable-title", on);
+    h.title = on ? "Click to rename" : "";
+  };
+  sync();
+  window._syncTitleEditable = sync;
+  const commit = () => {
+    const v = h.textContent.trim() || "My Tracker";
+    h.textContent = v;
+    localStorage.setItem(TITLE_KEY, v);
+    document.title = v;
+  };
+  h.addEventListener("blur", commit);
+  h.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); h.blur(); }
+    if (e.key === "Escape") { h.textContent = getAppTitle(); h.blur(); }
+  });
+}
+const CARD_SIZES = [["tiny", "XS"], ["small", "S"], ["medium", "M"]];
+const LIST_SIZES = [["compact", "compact"], ["normal", "normal"], ["roomy", "roomy"]];
 
 /* ---- Storage layer ---- */
 const LS_KEY = "myTracker.items.v1";
@@ -1051,7 +1208,8 @@ function toggleAdmin() {
 }
 function updateAdminButton() {
   const b = document.getElementById("adminBtn");
-  if (b) b.textContent = adminMode ? "⚙ Admin: ON" : "⚙ Admin mode";
+  if (b) { const ru = state.lang === "ru"; b.textContent = adminMode ? (ru ? "⚙ Админ: ВКЛ" : "⚙ Admin: ON") : (ru ? "⚙ Режим админа" : "⚙ Admin mode"); }
+  if (typeof window._syncTitleEditable === "function") window._syncTitleEditable();
 }
 function requestEdit() {
   if (canEdit) { // toggle back to view-only, and clear the grace so it re-asks next time
@@ -1075,7 +1233,8 @@ function requestEdit() {
 function updateEditButton() {
   const b = document.getElementById("unlockEditBtn");
   if (!b) return;
-  b.textContent = canEdit ? "🔒 Lock editing" : "🔓 Unlock to edit";
+  const ru = state.lang === "ru";
+  b.textContent = canEdit ? (ru ? "🔒 Заблокировать" : "🔒 Lock editing") : (ru ? "🔓 Разблокировать" : "🔓 Unlock to edit");
 }
 
 function loadLocal() {
@@ -1495,18 +1654,11 @@ function renderTabs() {
     b.dataset.cat = k;
     b.onclick = () => { state.showStats = false; state.activeCat = k; markActiveTab(); renderView(); };
     if (adminMode) {
-      b.draggable = true;
-      b.ondragstart = e => { e.dataTransfer.setData("text/plain", "cat:" + k); };
-      b.ondragover = e => e.preventDefault();
-      b.ondrop = e => {
-        e.preventDefault();
-        const data = e.dataTransfer.getData("text/plain");
-        if (!data.startsWith("cat:")) return;
-        const from = data.slice(4); if (from === k) return;
+      makeReorderable(b, k, "#tabs .tab", (from, to) => {
         const arr = orderedCatKeys().filter(x => x !== from);
-        arr.splice(arr.indexOf(k), 0, from);
+        arr.splice(arr.indexOf(to), 0, from);
         saveCatOrder(arr); renderTabs();
-      };
+      });
     }
     el.appendChild(b);
   });
@@ -1769,18 +1921,11 @@ function renderGroups() {
       '</h3><span class="group-count">' + items.length + '</span>';
     head.onclick = () => { toggleCollapsed(collapseKey); renderGroups(); };
     if (adminMode) {
-      head.draggable = true;
-      head.ondragstart = e => { e.stopPropagation(); e.dataTransfer.setData("text/plain", "status:" + status); };
-      head.ondragover = e => e.preventDefault();
-      head.ondrop = e => {
-        e.preventDefault();
-        const data = e.dataTransfer.getData("text/plain");
-        if (!data.startsWith("status:")) return;
-        const from = data.slice(7); if (from === status) return;
+      makeReorderable(head, status, ".group-head", (from, to) => {
         const arr = orderedStatuses(state.activeCat).filter(x => x !== from);
-        arr.splice(arr.indexOf(status), 0, from);
+        arr.splice(arr.indexOf(to), 0, from);
         saveStatusOrder(state.activeCat, arr); renderGroups();
-      };
+      });
     }
     group.appendChild(head);
 
@@ -1791,9 +1936,11 @@ function renderGroups() {
         // normalize each genre string to a canonical English key so mixed-language spellings merge
         const canon = s => (s || "Other").split(/[,/]/).map(p => { const t = p.trim().toLowerCase(); return GENRE_EN[t] || (GENRE_RU[t] ? p.trim().replace(/\b\w/g, c => c.toUpperCase()) : p.trim()); }).filter(Boolean).join(", ") || "Other";
         items.forEach(it => { const g = canon(it.my_genre); (byGenre[g] = byGenre[g] || []).push(it); });
-        Object.keys(byGenre).sort().forEach(genre => {
+        const bucket = "genre|" + state.activeCat + "|" + status;
+        const keys = applySubOrder(bucket, Object.keys(byGenre).sort((a, b) => a === "Other" ? 1 : b === "Other" ? -1 : a.localeCompare(b)));
+        keys.forEach(genre => {
           const lbl = genre === "Other" ? (state.lang === "ru" ? "Другое" : "Other") : translateGenreString(genre);
-          appendSubgroup(group, "genre|" + genre, lbl, byGenre[genre]);
+          appendSubgroup(group, "genre|" + genre, lbl, byGenre[genre], bucket, genre);
         });
       // Anime → To watch & Watched: split Films vs Series (item 8)
       } else if (state.activeCat === "anime" && (status === "To watch" || status === "Watched")) {
@@ -1801,16 +1948,22 @@ function renderGroups() {
         const series = items.filter(it => it.format !== "film");
         const filmL = state.lang === "ru" ? "Фильмы" : "Films";
         const serL = state.lang === "ru" ? "Сериалы" : "Series";
-        if (films.length) appendSubgroup(group, "aformat|" + status + "|film", filmL, films);
-        if (series.length) appendSubgroup(group, "aformat|" + status + "|series", serL, series);
+        const bucket = "aformat|" + status;
+        const parts = { film: { l: filmL, items: films }, series: { l: serL, items: series } };
+        applySubOrder(bucket, ["film", "series"]).forEach(k => {
+          if (parts[k].items.length) appendSubgroup(group, "aformat|" + status + "|" + k, parts[k].l, parts[k].items, bucket, k);
+        });
       // Movies & TV → Watched: split Animation vs Non-animation
       } else if ((state.activeCat === "movies" || state.activeCat === "tv") && status === "Watched") {
         const anim = items.filter(it => it.type === "animation");
         const real = items.filter(it => it.type !== "animation");
         const animL = state.lang === "ru" ? "Анимация" : "Animation";
         const realL = state.lang === "ru" ? "Не анимация" : "Non-animation";
-        if (anim.length) appendSubgroup(group, "type|" + state.activeCat + "|anim", animL, anim);
-        if (real.length) appendSubgroup(group, "type|" + state.activeCat + "|real", realL, real);
+        const bucket = "type|" + state.activeCat;
+        const parts = { anim: { l: animL, items: anim }, real: { l: realL, items: real } };
+        applySubOrder(bucket, ["anim", "real"]).forEach(k => {
+          if (parts[k].items.length) appendSubgroup(group, "type|" + state.activeCat + "|" + k, parts[k].l, parts[k].items, bucket, k);
+        });
       // Books → split Books vs Poems (poems tagged my_genre == "Poem")
       } else if (state.activeCat === "books") {
         const isPoem = it => it.type === "poem" || (it.my_genre || "").toLowerCase() === "poem";
@@ -1818,8 +1971,11 @@ function renderGroups() {
         const books = items.filter(it => !isPoem(it));
         const bookL = state.lang === "ru" ? "Книги" : "Books";
         const poemL = state.lang === "ru" ? "Стихи" : "Poems";
-        if (books.length) appendSubgroup(group, "kind|books|" + status, bookL, books);
-        if (poems.length) appendSubgroup(group, "kind|poems|" + status, poemL, poems);
+        const bucket = "kind|" + status;
+        const parts = { books: { l: bookL, items: books }, poems: { l: poemL, items: poems } };
+        applySubOrder(bucket, ["books", "poems"]).forEach(k => {
+          if (parts[k].items.length) appendSubgroup(group, "kind|" + k + "|" + status, parts[k].l, parts[k].items, bucket, k);
+        });
       } else {
         group.appendChild(renderItemsContainer(items));
       }
@@ -1829,12 +1985,21 @@ function renderGroups() {
 }
 
 // A collapsible sub-section (genre / type) with its own caret + persisted state
-function appendSubgroup(group, key, label, items) {
+function appendSubgroup(group, key, label, items, bucket, subKey) {
   const collapsed = isCollapsed(key);
   const h = document.createElement("div");
   h.className = "genre-head collapsible";
-  h.innerHTML = '<span class="caret">' + (collapsed ? "▸" : "▾") + '</span> ' + escapeHtml(label) + ' (' + items.length + ')';
+  h.innerHTML = '<span class="caret">' + (collapsed ? "▸" : "▾") + '</span> ' + (adminMode ? '<span style="cursor:grab">⋮⋮</span> ' : '') + escapeHtml(label) + ' (' + items.length + ')';
   h.onclick = () => { toggleCollapsed(key); renderGroups(); };
+  if (adminMode && bucket && subKey != null) {
+    makeReorderable(h, subKey, ".genre-head", (from, to) => {
+      // rebuild order for this bucket from the currently-shown subgroups
+      const shown = [...group.querySelectorAll(".genre-head[data-reorder-key]")].map(x => x.dataset.reorderKey);
+      const arr = shown.filter(x => x !== from);
+      arr.splice(arr.indexOf(to), 0, from);
+      saveSubOrder(bucket, arr); renderGroups();
+    });
+  }
   group.appendChild(h);
   if (!collapsed) group.appendChild(renderItemsContainer(items));
 }
@@ -1867,42 +2032,55 @@ function toggleCollapsed(key) {
 function renderRow(it) {
   const r = document.createElement("div");
   r.className = "row";
-  r.onclick = () => openEditor(it.id);
+  if (state.selectMode && state.selected[it.id]) r.classList.add("selected");
+  r.onclick = (e) => {
+    if (state.selectMode) { toggleSelect(it.id, e.shiftKey); return; }
+    openEditor(it.id);
+  };
+  const ru = state.lang === "ru";
   let poster;
-  if (it.poster) poster = '<img class="row-poster" src="' + escapeAttr(it.poster) + '" loading="lazy" onerror="this.replaceWith(makeRowPh())" />';
+  if (it.poster) poster = '<img class="row-poster" src="' + escapeAttr(it.poster) + '" loading="lazy" onerror="this.replaceWith(makeRowPh(this.closest(\'.row\')&&this.closest(\'.row\').dataset.cat))" />';
+  else if (it.category === "books") poster = '<div class="row-poster book">' + bookCoverHtml(it) + '</div>';
   else poster = '<div class="row-poster ph">🎬</div>';
+  r.dataset.cat = it.category;
+  r.dataset.id = it.id;
   const sub = [];
-  if (it.title_ru) sub.push(escapeHtml(it.title_ru));
-  if (it.type === "animation") sub.push("animation");
+  const subRu = displaySubtitle(it);
+  if (subRu) sub.push(escapeHtml(subRu));
+  if (it.type === "animation") sub.push(ru ? "анимация" : "animation");
   if (it.year) sub.push(escapeHtml(it.year));
   if (it.imdb_rating) sub.push("IMDb " + escapeHtml(it.imdb_rating));
-  if (it.my_rating) sub.push("Me " + escapeHtml(it.my_rating) + "/10");
-  if (it.imdb_genre) sub.push(escapeHtml(it.imdb_genre));
-  if (it.my_genre) sub.push(escapeHtml(it.my_genre));
+  if (it.my_rating) sub.push((ru ? "Моя " : "Me ") + escapeHtml(it.my_rating) + "/10");
+  if (it.imdb_genre) sub.push(escapeHtml(translateGenreString(it.imdb_genre)));
+  else if (it.my_genre) sub.push(escapeHtml(translateGenreString(it.my_genre)));
   if (it.progress) sub.push("▶ " + escapeHtml(it.progress));
   if (it.release_date) sub.push((it.release_sure ? "📅 " : "📅 ~") + escapeHtml(it.release_date));
-  if (it.notes) sub.push("📝 " + escapeHtml(it.notes));
+  const notesTxt = displayNotes(it);
+  if (notesTxt) sub.push("📝 " + escapeHtml(notesTxt));
   const flags = [];
   if (it.favourite) flags.push('<span class="ic-star">★</span>');
   if (it.recommend) flags.push('<span class="ic-rec">♥</span>');
   if (it.priority) flags.push("💡");
   r.innerHTML = poster +
-    '<div class="row-main"><div class="row-title">' + escapeHtml(it.title || "Untitled") + '</div>' +
+    '<div class="row-main"><div class="row-title">' + escapeHtml(displayTitle(it) || "Untitled") + '</div>' +
     (sub.length ? '<div class="row-sub">' + sub.map(s => "<span>" + s + "</span>").join("") + '</div>' : "") +
     '</div>' +
+    (state.selectMode ? '<div class="row-check">' + (state.selected[it.id] ? "☑" : "☐") + '</div>' : "") +
     (flags.length ? '<div class="row-flags">' + flags.join("") + '</div>' : "");
   return r;
 }
-function makeRowPh() { const d = document.createElement("div"); d.className = "row-poster ph"; d.textContent = "🎬"; return d; }
+function makeRowPh(cat) { const d = document.createElement("div"); d.className = "row-poster ph"; d.textContent = cat === "books" ? "📖" : "🎬"; return d; }
 
 function renderSizeControls() {
   const seg = document.getElementById("sizeSeg");
   const sizes = state.viewMode === "list" ? LIST_SIZES : CARD_SIZES;
   const current = state.viewMode === "list" ? state.listSize : state.cardSize;
   seg.innerHTML = "";
+  const ru = state.lang === "ru";
+  const listLbl = { compact: ru ? "Плотно" : "Compact", normal: ru ? "Обычно" : "Normal", roomy: ru ? "Просторно" : "Roomy" };
   sizes.forEach(([val, label]) => {
     const b = document.createElement("button");
-    b.textContent = label;
+    b.textContent = state.viewMode === "list" ? (listLbl[val] || label) : label;
     if (val === current) b.className = "on";
     b.onclick = () => {
       if (state.viewMode === "list") state.listSize = val; else state.cardSize = val;
@@ -1975,7 +2153,7 @@ function renderCard(it) {
     const span = document.createElement("span");
     span.className = "s" + (cur >= s * 2 ? " on" : "");
     span.textContent = "★";
-    span.onclick = (e) => {
+    if (!state.selectMode) span.onclick = (e) => {
       e.stopPropagation();
       if (!canEdit) return;
       const val = s * 2;
@@ -1984,7 +2162,11 @@ function renderCard(it) {
     };
     stars.appendChild(span);
   }
+  if (state.selectMode) stars.style.pointerEvents = "none";
   body.appendChild(stars);
+
+  // In selection mode the whole card is one big tap target — no quick-action overlay.
+  if (state.selectMode) { c.classList.add("selecting"); return c; }
 
   // quick actions (edit mode): flag toggles + 3-dot status menu, over the poster
   const actions = document.createElement("div");
@@ -2203,7 +2385,9 @@ async function openDetail(id) {
       m.innerHTML = closeX +
         '<h2 style="margin:0 20px 8px 0">' + escapeHtml(displayTitle(it) || "Untitled") + '</h2>' +
         (genreLine ? '<div style="color:var(--accent-2);font-size:12px;margin-bottom:10px">' + escapeHtml(genreLine) + '</div>' : '') +
-        '<div style="text-align:center;font-size:64px;margin:10px 0">' + (it.category === "books" ? "📖" : "🎬") + '</div>' +
+        (it.category === "books"
+          ? '<div style="max-width:200px;margin:10px auto;aspect-ratio:2/3;border-radius:10px;overflow:hidden;position:relative">' + bookCoverHtml(it) + '</div>'
+          : '<div style="text-align:center;font-size:64px;margin:10px 0">🎬</div>') +
         (desc ? '<div style="font-size:13px;line-height:1.5;margin-bottom:10px">' + escapeHtml(desc) + '</div>' : '<div style="color:var(--muted);font-size:13px;margin-bottom:10px">No description yet.</div>') +
         (flags ? '<div style="margin-bottom:10px">' + flags + '</div>' : '') +
         '<div class="modal-actions"><button class="btn" id="detailMore">Details ▾</button></div>';
@@ -3178,14 +3362,20 @@ function toggleSelectMode() {
   updateBulkCount();
 }
 function paintSelection(ids) {
-  // update only the affected cards' selected class + check glyph, no full re-render
+  // update only the affected cards/rows' selected class + check glyph, no full re-render
   (ids || Object.keys(state.selected)).forEach(id => {
-    const el = document.querySelector('.card[data-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
-    if (!el) return;
+    const esc = (window.CSS && CSS.escape ? CSS.escape(id) : id);
     const on = !!state.selected[id];
-    el.classList.toggle("selected", on);
-    const chk = el.querySelector(".sel-check");
-    if (chk) chk.textContent = on ? "☑" : "☐";
+    const card = document.querySelector('.card[data-id="' + esc + '"]');
+    if (card) {
+      card.classList.toggle("selected", on);
+      const chk = card.querySelector(".sel-check"); if (chk) chk.textContent = on ? "☑" : "☐";
+    }
+    const row = document.querySelector('.row[data-id="' + esc + '"]');
+    if (row) {
+      row.classList.toggle("selected", on);
+      const rchk = row.querySelector(".row-check"); if (rchk) rchk.textContent = on ? "☑" : "☐";
+    }
   });
 }
 function toggleSelect(id, shift) {
@@ -3205,9 +3395,29 @@ function toggleSelect(id, shift) {
   updateBulkCount();
 }
 function selectedItems() { return state.items.filter(it => state.selected[it.id]); }
+// Bug 3: select (or clear) all items currently visible in the active category / view.
+function selectAllInCategory() {
+  const visible = (window._visibleOrder || []).slice();
+  if (!visible.length) return;
+  const allSelected = visible.every(id => state.selected[id]);
+  if (allSelected) {
+    visible.forEach(id => delete state.selected[id]);
+  } else {
+    visible.forEach(id => { state.selected[id] = true; });
+  }
+  paintSelection(visible);
+  updateBulkCount();
+}
 function updateBulkCount() {
   const n = Object.keys(state.selected).length;
-  const el = document.getElementById("bulkCount"); if (el) el.textContent = n + " selected";
+  const ru = state.lang === "ru";
+  const el = document.getElementById("bulkCount"); if (el) el.textContent = ru ? (n + " выбрано") : (n + " selected");
+  const sa = document.getElementById("bulkSelectAllBtn");
+  if (sa) {
+    const visible = (window._visibleOrder || []);
+    const allSel = visible.length && visible.every(id => state.selected[id]);
+    sa.textContent = allSel ? (ru ? "☐ Снять все" : "☐ Clear all") : (ru ? "☑ Выбрать все" : "☑ Select all");
+  }
 }
 async function bulkPersist(items) {
   saveLocal(); renderGroups();
@@ -3407,7 +3617,7 @@ function init() {
 
   document.getElementById("exportBtn").onclick = exportData;
   const themeBtn = document.getElementById("themeBtn"), themeMenu = document.getElementById("themeMenu");
-  themeBtn.onclick = (e) => { e.stopPropagation(); themeMenu.style.display = themeMenu.style.display === "none" ? "block" : "none"; };
+  themeBtn.onclick = (e) => { e.stopPropagation(); const show = themeMenu.style.display === "none"; themeMenu.style.display = show ? "block" : "none"; if (show) clampMenu(themeMenu); };
   themeMenu.querySelectorAll("button[data-theme]").forEach(b => { b.onclick = () => { setTheme(b.dataset.theme); themeMenu.style.display = "none"; }; });
   document.addEventListener("click", () => { if (themeMenu) themeMenu.style.display = "none"; });
   document.getElementById("dupeBtn").onclick = findDuplicates;
@@ -3421,6 +3631,7 @@ function init() {
 
   // Multi-select + bulk actions
   document.getElementById("selectBtn").onclick = toggleSelectMode;
+  document.getElementById("bulkSelectAllBtn").onclick = selectAllInCategory;
   document.getElementById("bulkEditBtn").onclick = bulkEdit;
   document.getElementById("bulkFetchBtn").onclick = bulkFetch;
   document.getElementById("bulkDeleteBtn").onclick = bulkDelete;
@@ -3429,12 +3640,12 @@ function init() {
   document.getElementById("importFile").onchange = e => { if (e.target.files[0]) importData(e.target.files[0]); e.target.value = ""; };
   document.getElementById("clearAllBtn").onclick = () => { document.getElementById("moreMenu").style.display = "none"; clearAll(); };
   const moreBtn = document.getElementById("moreBtn"), moreMenu = document.getElementById("moreMenu");
-  moreBtn.onclick = (e) => { e.stopPropagation(); moreMenu.style.display = moreMenu.style.display === "none" ? "block" : "none"; };
+  moreBtn.onclick = (e) => { e.stopPropagation(); const show = moreMenu.style.display === "none"; moreMenu.style.display = show ? "block" : "none"; if (show) clampMenu(moreMenu); };
   document.addEventListener("click", () => { if (moreMenu) moreMenu.style.display = "none"; });
 
   // Add dropdown menu
   const addBtnMenu = document.getElementById("addBtnMenu"), addMenu = document.getElementById("addMenu");
-  addBtnMenu.onclick = (e) => { e.stopPropagation(); addMenu.style.display = addMenu.style.display === "none" ? "block" : "none"; };
+  addBtnMenu.onclick = (e) => { e.stopPropagation(); const show = addMenu.style.display === "none"; addMenu.style.display = show ? "block" : "none"; if (show) clampMenu(addMenu); };
   addMenu.addEventListener("click", () => { addMenu.style.display = "none"; });
   document.addEventListener("click", () => { if (addMenu) addMenu.style.display = "none"; });
 
@@ -3498,6 +3709,7 @@ loadLocal();
 loadView();
 applyTheme();
 init();
+setupTitleEditing();
 setTimeout(maybeBackupReminder, 1500);
 </script>
 </body>
