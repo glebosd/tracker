@@ -303,13 +303,14 @@
     .top-row { gap: 8px; }
     h1 { font-size: 17px; }
     .btn.small { padding: 6px 8px; font-size: 11px; }
-    .toolbar { padding: 0 12px; gap: 6px; }
-    .status-groups, .stats-wrap { padding: 0 12px; }
+    .toolbar { padding: 8px 12px 14px; gap: 8px; }
+    .status-groups, .stats-wrap { padding: 0 12px; margin-top: 6px; }
     .fab { width: 52px; height: 52px; font-size: 26px; right: 14px; bottom: 14px; }
-    .view-controls { width: 100%; }
+    .view-controls { width: 100%; margin-top: 2px; }
     /* organic spacing between section headers and their items */
-    .group-head { margin: 10px 0 14px; }
+    .group-head { margin: 12px 0 16px; }
     .genre-head { margin: 16px 0 10px; }
+    .group:first-child { margin-top: 4px; }
     .group { margin-bottom: 26px; }
     /* keep search text from sliding under the 🌐 button */
     .search-wrap input { padding-right: 46px; }
@@ -915,27 +916,45 @@ function clampMenu(menu) {
 /* ---- Touch + mouse drag-to-reorder (HTML5 DnD doesn't work on phones) ----
    Attach to a handle element. onReorder(fromKey, toKey) is called when dropped
    over another element in the same group carrying data-reorder-key.        */
-function makeReorderable(el, key, groupSelector, onReorder) {
+function makeReorderable(el, key, groupSelector, onReorder, opts) {
+  opts = opts || {};
+  const enabled = opts.enabled || (() => document.body.classList.contains("admin"));
+  const longPress = !!opts.longPress;
+  const THRESH = 6, HOLD_MS = 320;
   el.dataset.reorderKey = key;
-  el.style.touchAction = "none"; // let us handle the gesture
-  let dragging = false, startX = 0, startY = 0, ghost = null, lastTarget = null;
-  const THRESH = 6;
+  if (!longPress) el.style.touchAction = "none"; // small handles: we own the gesture
   el.addEventListener("pointerdown", (e) => {
-    if (!document.body.classList.contains("admin")) return;
+    if (!enabled()) return;
     if (e.button != null && e.button !== 0) return;
-    startX = e.clientX; startY = e.clientY;
-    let moved = false;
+    const startX = e.clientX, startY = e.clientY;
+    let moved = false, armed = !longPress, holdTimer = null;
+    const clearHold = () => { if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; } };
+    if (longPress) {
+      // arm only after a stationary hold, so a normal scroll/tap is unaffected
+      holdTimer = setTimeout(() => {
+        armed = true;
+        try { navigator.vibrate && navigator.vibrate(15); } catch {}
+        el.classList.add("dragging");
+        document.body.classList.add("reordering");
+        try { el.setPointerCapture(e.pointerId); } catch {}
+      }, HOLD_MS);
+    }
+    let lastTarget = null;
     const onMove = (ev) => {
       const dx = ev.clientX - startX, dy = ev.clientY - startY;
+      if (!armed) {
+        // moved before the hold armed → it's a scroll/tap, abort the drag
+        if (Math.hypot(dx, dy) >= THRESH) clearHold();
+        return;
+      }
       if (!moved && Math.hypot(dx, dy) < THRESH) return;
       if (!moved) {
-        moved = true; dragging = true;
+        moved = true;
         try { el.setPointerCapture(e.pointerId); } catch {}
         el.classList.add("dragging");
         document.body.classList.add("reordering");
       }
       ev.preventDefault();
-      // find element under pointer that is a reorder target in the same group
       el.style.pointerEvents = "none";
       const under = document.elementFromPoint(ev.clientX, ev.clientY);
       el.style.pointerEvents = "";
@@ -944,19 +963,18 @@ function makeReorderable(el, key, groupSelector, onReorder) {
       if (tgt && tgt !== el) { tgt.classList.add("reorder-over"); lastTarget = tgt; }
       else lastTarget = null;
     };
-    const onUp = (ev) => {
+    const onUp = () => {
+      clearHold();
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerup", onUp);
       document.removeEventListener("pointercancel", onUp);
       el.classList.remove("dragging");
       document.body.classList.remove("reordering");
       document.querySelectorAll(groupSelector + ".reorder-over").forEach(x => x.classList.remove("reorder-over"));
-      if (dragging && lastTarget) {
+      if (armed && moved && lastTarget) {
         const toKey = lastTarget.dataset.reorderKey;
-        dragging = false;
-        if (toKey && toKey !== key) { onReorder(key, toKey); return; }
+        if (toKey && toKey !== key) onReorder(key, toKey);
       }
-      dragging = false;
     };
     document.addEventListener("pointermove", onMove, { passive: false });
     document.addEventListener("pointerup", onUp);
@@ -2065,8 +2083,8 @@ function renderRow(it) {
     '<div class="row-main"><div class="row-title">' + escapeHtml(displayTitle(it) || "Untitled") + '</div>' +
     (sub.length ? '<div class="row-sub">' + sub.map(s => "<span>" + s + "</span>").join("") + '</div>' : "") +
     '</div>' +
-    (state.selectMode ? '<div class="row-check">' + (state.selected[it.id] ? "☑" : "☐") + '</div>' : "") +
-    (flags.length ? '<div class="row-flags">' + flags.join("") + '</div>' : "");
+    (flags.length ? '<div class="row-flags">' + flags.join("") + '</div>' : "") +
+    (state.selectMode ? '<div class="row-check">' + (state.selected[it.id] ? "☑" : "☐") + '</div>' : "");
   return r;
 }
 function makeRowPh(cat) { const d = document.createElement("div"); d.className = "row-poster ph"; d.textContent = cat === "books" ? "📖" : "🎬"; return d; }
@@ -2099,13 +2117,10 @@ function renderCard(it) {
   c.className = "card";
   c.dataset.id = it.id;
   if (state.selectMode && state.selected[it.id]) c.classList.add("selected");
-  // drag-to-reorder in custom sort mode (edit mode, not selecting)
+  // drag-to-reorder in custom sort mode (edit mode, not selecting) — touch + mouse via long-press
   if (state.sort === "custom" && canEdit && !state.selectMode) {
-    c.draggable = true;
-    c.ondragstart = (e) => { e.dataTransfer.setData("text/plain", it.id); c.style.opacity = "0.5"; };
-    c.ondragend = () => { c.style.opacity = "1"; };
-    c.ondragover = (e) => { e.preventDefault(); };
-    c.ondrop = (e) => { e.preventDefault(); const from = e.dataTransfer.getData("text/plain"); reorderItem(from, it.id); };
+    makeReorderable(c, it.id, ".card", (from, to) => { reorderItem(from, to); },
+      { enabled: () => state.sort === "custom" && canEdit && !state.selectMode, longPress: true });
   }
   c.onclick = (e) => {
     if (state.selectMode) { toggleSelect(it.id, e.shiftKey); return; }
