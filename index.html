@@ -134,8 +134,22 @@
   .genre-head.collapsible { cursor: pointer; user-select: none; }
   .genre-head.collapsible:hover { color: var(--text); }
   /* touch+mouse reorder feedback */
-  .dragging { opacity: 0.5; }
-  .reorder-over { outline: 2px dashed var(--accent); outline-offset: 2px; border-radius: 8px; }
+  .dragging { opacity: 0.45; }
+  .reorder-before, .reorder-after { position: relative; }
+  /* vertical lists (rows / headers): bar on top (before) or bottom (after) */
+  .row.reorder-before::before, .group-head.reorder-before::before, .genre-head.reorder-before::before,
+  .row.reorder-after::after, .group-head.reorder-after::after, .genre-head.reorder-after::after {
+    content: ""; position: absolute; left: 0; right: 0; height: 3px; background: var(--accent); border-radius: 3px; z-index: 5;
+  }
+  .row.reorder-before::before, .group-head.reorder-before::before, .genre-head.reorder-before::before { top: -3px; }
+  .row.reorder-after::after, .group-head.reorder-after::after, .genre-head.reorder-after::after { bottom: -3px; }
+  /* horizontal (card grid / tabs): bar on left (before) or right (after) */
+  .card.reorder-before::before, .tab.reorder-before::before,
+  .card.reorder-after::after, .tab.reorder-after::after {
+    content: ""; position: absolute; top: 4px; bottom: 4px; width: 3px; background: var(--accent); border-radius: 3px; z-index: 5;
+  }
+  .card.reorder-before::before, .tab.reorder-before::before { left: -4px; }
+  .card.reorder-after::after, .tab.reorder-after::after { right: -4px; }
   body.reordering { user-select: none; -webkit-user-select: none; }
   .genre-head .caret { font-size: 11px; }
 
@@ -919,67 +933,93 @@ function clampMenu(menu) {
 function makeReorderable(el, key, groupSelector, onReorder, opts) {
   opts = opts || {};
   const enabled = opts.enabled || (() => document.body.classList.contains("admin"));
-  const longPress = !!opts.longPress;
-  const THRESH = 6, HOLD_MS = 320;
+  const axis = opts.axis || "y";          // "x" for card grid, "y" for rows/headers
+  const wantLongPress = !!opts.longPress; // only honored for touch/pen
+  const THRESH = 6, HOLD_MS = 300;
   el.dataset.reorderKey = key;
-  if (!longPress) el.style.touchAction = "none"; // small handles: we own the gesture
+
+  // Swallow the click that fires right after a real drag (else the poster/editor opens).
+  let suppressClick = false;
+  el.addEventListener("click", (ev) => {
+    if (suppressClick) { ev.stopPropagation(); ev.preventDefault(); suppressClick = false; }
+  }, true);
+
   el.addEventListener("pointerdown", (e) => {
     if (!enabled()) return;
     if (e.button != null && e.button !== 0) return;
+    const isTouch = e.pointerType === "touch" || e.pointerType === "pen";
+    const longPress = wantLongPress && isTouch;   // laptops (mouse) never long-press
+    if (isTouch && longPress) el.style.touchAction = "none";
     const startX = e.clientX, startY = e.clientY;
-    let moved = false, armed = !longPress, holdTimer = null;
+    let moved = false, armed = !longPress, holdTimer = null, lastTarget = null, lastPos = "before";
     const clearHold = () => { if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; } };
+    const clearOver = () => document.querySelectorAll(groupSelector).forEach(x => x.classList.remove("reorder-before", "reorder-after"));
+
     if (longPress) {
-      // arm only after a stationary hold, so a normal scroll/tap is unaffected
       holdTimer = setTimeout(() => {
         armed = true;
-        try { navigator.vibrate && navigator.vibrate(15); } catch {}
-        el.classList.add("dragging");
-        document.body.classList.add("reordering");
+        try { navigator.vibrate && navigator.vibrate(12); } catch {}
+        el.classList.add("dragging"); document.body.classList.add("reordering");
         try { el.setPointerCapture(e.pointerId); } catch {}
       }, HOLD_MS);
     }
-    let lastTarget = null;
+
     const onMove = (ev) => {
       const dx = ev.clientX - startX, dy = ev.clientY - startY;
-      if (!armed) {
-        // moved before the hold armed → it's a scroll/tap, abort the drag
-        if (Math.hypot(dx, dy) >= THRESH) clearHold();
-        return;
-      }
+      if (!armed) { if (Math.hypot(dx, dy) >= THRESH) clearHold(); return; }
       if (!moved && Math.hypot(dx, dy) < THRESH) return;
       if (!moved) {
         moved = true;
         try { el.setPointerCapture(e.pointerId); } catch {}
-        el.classList.add("dragging");
-        document.body.classList.add("reordering");
+        el.classList.add("dragging"); document.body.classList.add("reordering");
       }
       ev.preventDefault();
       el.style.pointerEvents = "none";
       const under = document.elementFromPoint(ev.clientX, ev.clientY);
       el.style.pointerEvents = "";
       const tgt = under && under.closest(groupSelector + "[data-reorder-key]");
-      document.querySelectorAll(groupSelector + ".reorder-over").forEach(x => x.classList.remove("reorder-over"));
-      if (tgt && tgt !== el) { tgt.classList.add("reorder-over"); lastTarget = tgt; }
-      else lastTarget = null;
+      clearOver();
+      if (tgt && tgt !== el) {
+        const r = tgt.getBoundingClientRect();
+        // before/after based on which half of the target the pointer is over
+        const pos = axis === "x"
+          ? (ev.clientX < r.left + r.width / 2 ? "before" : "after")
+          : (ev.clientY < r.top + r.height / 2 ? "before" : "after");
+        tgt.classList.add(pos === "before" ? "reorder-before" : "reorder-after");
+        lastTarget = tgt; lastPos = pos;
+      } else { lastTarget = null; }
     };
     const onUp = () => {
       clearHold();
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerup", onUp);
       document.removeEventListener("pointercancel", onUp);
-      el.classList.remove("dragging");
-      document.body.classList.remove("reordering");
-      document.querySelectorAll(groupSelector + ".reorder-over").forEach(x => x.classList.remove("reorder-over"));
-      if (armed && moved && lastTarget) {
-        const toKey = lastTarget.dataset.reorderKey;
-        if (toKey && toKey !== key) onReorder(key, toKey);
+      el.classList.remove("dragging"); document.body.classList.remove("reordering");
+      clearOver();
+      if (isTouch && longPress) el.style.touchAction = "";
+      if (armed && moved) {
+        suppressClick = true;
+        setTimeout(() => { suppressClick = false; }, 350);
+        if (lastTarget) {
+          const toKey = lastTarget.dataset.reorderKey;
+          if (toKey && toKey !== key) onReorder(key, toKey, lastPos);
+        }
       }
     };
     document.addEventListener("pointermove", onMove, { passive: false });
     document.addEventListener("pointerup", onUp);
     document.addEventListener("pointercancel", onUp);
   });
+}
+
+// Move `fromKey` to just before/after `toKey` within an array of keys. Returns the new array.
+function spliceOrder(arr, fromKey, toKey, pos) {
+  const a = arr.filter(x => x !== fromKey);
+  let idx = a.indexOf(toKey);
+  if (idx === -1) { a.push(fromKey); return a; }
+  if (pos === "after") idx += 1;
+  a.splice(idx, 0, fromKey);
+  return a;
 }
 
 /* ---- Language display + note translation ---- */
@@ -1672,11 +1712,10 @@ function renderTabs() {
     b.dataset.cat = k;
     b.onclick = () => { state.showStats = false; state.activeCat = k; markActiveTab(); renderView(); };
     if (adminMode) {
-      makeReorderable(b, k, "#tabs .tab", (from, to) => {
-        const arr = orderedCatKeys().filter(x => x !== from);
-        arr.splice(arr.indexOf(to), 0, from);
+      makeReorderable(b, k, "#tabs .tab", (from, to, pos) => {
+        const arr = spliceOrder(orderedCatKeys(), from, to, pos);
         saveCatOrder(arr); renderTabs();
-      });
+      }, { axis: "x" });
     }
     el.appendChild(b);
   });
@@ -1939,11 +1978,10 @@ function renderGroups() {
       '</h3><span class="group-count">' + items.length + '</span>';
     head.onclick = () => { toggleCollapsed(collapseKey); renderGroups(); };
     if (adminMode) {
-      makeReorderable(head, status, ".group-head", (from, to) => {
-        const arr = orderedStatuses(state.activeCat).filter(x => x !== from);
-        arr.splice(arr.indexOf(to), 0, from);
+      makeReorderable(head, status, ".group-head", (from, to, pos) => {
+        const arr = spliceOrder(orderedStatuses(state.activeCat), from, to, pos);
         saveStatusOrder(state.activeCat, arr); renderGroups();
-      });
+      }, { axis: "y" });
     }
     group.appendChild(head);
 
@@ -2010,13 +2048,11 @@ function appendSubgroup(group, key, label, items, bucket, subKey) {
   h.innerHTML = '<span class="caret">' + (collapsed ? "▸" : "▾") + '</span> ' + (adminMode ? '<span style="cursor:grab">⋮⋮</span> ' : '') + escapeHtml(label) + ' (' + items.length + ')';
   h.onclick = () => { toggleCollapsed(key); renderGroups(); };
   if (adminMode && bucket && subKey != null) {
-    makeReorderable(h, subKey, ".genre-head", (from, to) => {
-      // rebuild order for this bucket from the currently-shown subgroups
+    makeReorderable(h, subKey, ".genre-head", (from, to, pos) => {
       const shown = [...group.querySelectorAll(".genre-head[data-reorder-key]")].map(x => x.dataset.reorderKey);
-      const arr = shown.filter(x => x !== from);
-      arr.splice(arr.indexOf(to), 0, from);
+      const arr = spliceOrder(shown, from, to, pos);
       saveSubOrder(bucket, arr); renderGroups();
-    });
+    }, { axis: "y" });
   }
   group.appendChild(h);
   if (!collapsed) group.appendChild(renderItemsContainer(items));
@@ -2055,6 +2091,10 @@ function renderRow(it) {
     if (state.selectMode) { toggleSelect(it.id, e.shiftKey); return; }
     openEditor(it.id);
   };
+  if (state.sort === "custom" && canEdit && !state.selectMode) {
+    makeReorderable(r, it.id, ".row", (from, to, pos) => { reorderItem(from, to, pos); },
+      { enabled: () => state.sort === "custom" && canEdit && !state.selectMode, longPress: true, axis: "y" });
+  }
   const ru = state.lang === "ru";
   let poster;
   if (it.poster) poster = '<img class="row-poster" src="' + escapeAttr(it.poster) + '" loading="lazy" onerror="this.replaceWith(makeRowPh(this.closest(\'.row\')&&this.closest(\'.row\').dataset.cat))" />';
@@ -2117,10 +2157,10 @@ function renderCard(it) {
   c.className = "card";
   c.dataset.id = it.id;
   if (state.selectMode && state.selected[it.id]) c.classList.add("selected");
-  // drag-to-reorder in custom sort mode (edit mode, not selecting) — touch + mouse via long-press
+  // drag-to-reorder in custom sort mode (edit mode, not selecting) — touch + mouse
   if (state.sort === "custom" && canEdit && !state.selectMode) {
-    makeReorderable(c, it.id, ".card", (from, to) => { reorderItem(from, to); },
-      { enabled: () => state.sort === "custom" && canEdit && !state.selectMode, longPress: true });
+    makeReorderable(c, it.id, ".card", (from, to, pos) => { reorderItem(from, to, pos); },
+      { enabled: () => state.sort === "custom" && canEdit && !state.selectMode, longPress: true, axis: "x" });
   }
   c.onclick = (e) => {
     if (state.selectMode) { toggleSelect(it.id, e.shiftKey); return; }
@@ -2249,8 +2289,8 @@ function openStatusMenu(it, anchor) {
   setTimeout(() => document.addEventListener("click", function h() { menu.remove(); document.removeEventListener("click", h); }), 0);
 }
 
-// Reorder: place `fromId` immediately before `toId`, renumber that status group's order
-async function reorderItem(fromId, toId) {
+// Reorder: place `fromId` before/after `toId`, renumber that status group's order
+async function reorderItem(fromId, toId, pos) {
   if (fromId === toId) return;
   const from = state.items.find(x => x.id === fromId);
   const to = state.items.find(x => x.id === toId);
@@ -2258,7 +2298,8 @@ async function reorderItem(fromId, toId) {
   // work within the same category+status group, in current sorted order
   const group = sortItems(state.items.filter(x => x.category === to.category && x.status === to.status));
   const ids = group.map(x => x.id).filter(id => id !== fromId);
-  const at = ids.indexOf(toId);
+  let at = ids.indexOf(toId);
+  if (at === -1) at = ids.length; else if (pos === "after") at += 1;
   ids.splice(at, 0, fromId);
   // reassign sequential order; ensure from adopts the group's status/category
   from.category = to.category; from.status = to.status;
