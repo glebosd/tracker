@@ -90,6 +90,17 @@
 
   .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 10px 16px; margin: 0; }
   .search { flex: 1; min-width: 180px; }
+  .pill-toggle {
+    display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 999px; padding: 7px 14px; cursor: pointer; font-size: 13px; transition: all .12s ease;
+  }
+  .pill-toggle:hover { border-color: var(--accent); }
+  .pill-toggle.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pill-toggle.on .ic-star, .pill-toggle.on .ic-rec, .pill-toggle.on .ic-pri { color: #fff; filter: none; }
+  .ic-star { color: var(--star); }
+  .ic-rec { color: var(--accent-2); }
+  .ic-pri { filter: grayscale(0.2); }
   .search-wrap { position: relative; }
   .search-wrap input { padding-right: 42px; }
   .search-all { position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
@@ -439,22 +450,22 @@
     <button class="btn small" id="unlockEditBtn">🔓 Unlock to edit</button>
     <button class="btn small edit-only" id="adminBtn">⚙ Admin mode</button>
     <button class="btn small edit-only admin-only" id="selectBtn">☑ Select</button>
+    <button class="btn small edit-only admin-only" id="dupeBtn">🔁 Find duplicates</button>
     <span class="edit-only" style="position:relative">
       <button class="btn small primary" id="addBtnMenu">➕ Add ▾</button>
-      <div id="addMenu" style="display:none;position:absolute;left:0;top:36px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:6px;z-index:30;min-width:180px">
+      <div id="addMenu" style="display:none;position:absolute;right:0;top:36px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:6px;z-index:30;min-width:180px">
         <button class="btn small" id="bulkBtn" style="width:100%;text-align:left;border:none;background:none">＋ Bulk add (titles)</button>
         <button class="btn small" id="noteBtn" style="width:100%;text-align:left;border:none;background:none">📥 Import note</button>
         <button class="btn small" id="booksBtn" style="width:100%;text-align:left;border:none;background:none">📚 Import books</button>
         <button class="btn small" id="importBtn" style="width:100%;text-align:left;border:none;background:none">📂 Import file (backup)</button>
       </div>
     </span>
-    <button class="btn small edit-only admin-only" id="dupeBtn">🔁 Find duplicates</button>
-    <button class="btn small edit-only admin-only" id="syncBtn">☁ Sync setup</button>
-    <button class="btn small" id="exportBtn">Export</button>
     <span class="edit-only" style="position:relative">
       <button class="btn small" id="moreBtn">⋯</button>
       <div id="moreMenu" style="display:none;position:absolute;right:0;top:36px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:6px;z-index:30;min-width:160px">
         <button class="btn small admin-only" id="fetchAllBtn" style="width:100%;text-align:left;border:none;background:none">🎬 Fetch all posters</button>
+        <button class="btn small admin-only" id="syncBtn" style="width:100%;text-align:left;border:none;background:none">☁ Sync setup</button>
+        <button class="btn small" id="exportBtn" style="width:100%;text-align:left;border:none;background:none">⬇ Export</button>
         <button class="btn small" id="clearAllBtn" style="color:var(--danger);width:100%;text-align:left;border:none;background:none">🗑 Clear all</button>
       </div>
     </span>
@@ -479,17 +490,17 @@
 <div class="toolbar">
   <div class="search"><div class="search-wrap"><input type="text" id="search" placeholder="Search titles, genres, notes…" /><button type="button" id="searchAll" class="search-all" title="Search across all categories">🌐</button></div></div>
   <select id="sortSel" style="width:auto">
-    <option value="custom">✋ Custom (drag to arrange)</option>
+    <option value="custom">Custom (drag to arrange)</option>
     <option value="added">Newest added</option>
-    <option value="priority">🔺 Priority first</option>
+    <option value="priority">Priority first</option>
     <option value="title">Title A–Z</option>
     <option value="year">Year</option>
     <option value="my_rating">My rating</option>
     <option value="imdb_rating">IMDb rating</option>
   </select>
-  <label class="check"><input type="checkbox" id="favOnly" /> ⭐ Favourites</label>
-  <label class="check"><input type="checkbox" id="recOnly" /> 👍 Recommended</label>
-  <label class="check"><input type="checkbox" id="priOnly" /> 🔺 Priority</label>
+  <button type="button" class="pill-toggle" id="favOnly"><span class="ic-star">★</span> <span class="pill-lbl">Favourites</span></button>
+  <button type="button" class="pill-toggle" id="recOnly"><span class="ic-rec">♥</span> <span class="pill-lbl">Recommended</span></button>
+  <button type="button" class="pill-toggle" id="priOnly"><span class="ic-pri">💡</span> <span class="pill-lbl">Priority</span></button>
   <div class="view-controls">
     <span class="seg" id="viewModeSeg">
       <button data-mode="cards">▦ Cards</button>
@@ -599,7 +610,7 @@
     <div class="row-inline" style="margin-bottom:12px">
       <label class="check"><input type="checkbox" id="f_favourite" /> ⭐ Favourite</label>
       <label class="check"><input type="checkbox" id="f_recommend" /> 👍 Recommend</label>
-      <label class="check"><input type="checkbox" id="f_priority" /> 🔺 Priority next</label>
+      <label class="check"><input type="checkbox" id="f_priority" /> 💡 Priority next</label>
     </div>
 
     <div class="field"><label>Description (English) <button type="button" class="btn small tr-btn" id="trToEn" title="Translate from the Russian description">⇄ from RU</button></label><textarea id="f_description" placeholder="short synopsis…"></textarea></div>
@@ -813,6 +824,46 @@ function loadLang() { const v = localStorage.getItem(LANG_KEY); if (v) state.lan
 function saveLang() { localStorage.setItem(LANG_KEY, state.lang); }
 function renderLangSeg() {
   document.querySelectorAll("#langSeg button").forEach(b => { b.className = b.dataset.lang === state.lang ? "on" : ""; });
+}
+// Translate the static UI chrome (buttons, menus, sort options) to the current language.
+function applyUiLang() {
+  const ru = state.lang === "ru";
+  const T = (id, en, rus) => { const el = document.getElementById(id); if (el) el.textContent = ru ? rus : en; };
+  T("selectBtn", state.selectMode ? "✖ Done selecting" : "☑ Select", state.selectMode ? "✖ Готово" : "☑ Выбрать");
+  T("dupeBtn", "🔁 Find duplicates", "🔁 Найти дубликаты");
+  T("syncBtn", "☁ Sync setup", "☁ Синхронизация");
+  T("exportBtn", "⬇ Export", "⬇ Экспорт");
+  T("clearAllBtn", "🗑 Clear all", "🗑 Очистить всё");
+  T("fetchAllBtn", "🎬 Fetch all posters", "🎬 Загрузить постеры");
+  T("addBtnMenu", "➕ Add ▾", "➕ Добавить ▾");
+  T("bulkBtn", "＋ Bulk add (titles)", "＋ Добавить списком");
+  T("noteBtn", "📥 Import note", "📥 Импорт заметки");
+  T("booksBtn", "📚 Import books", "📚 Импорт книг");
+  T("importBtn", "📂 Import file (backup)", "📂 Импорт файла");
+  // unlock / admin buttons reflect state; let their own updaters handle text, only translate when in known base state
+  const ue = document.getElementById("unlockEditBtn");
+  if (ue && /Unlock to edit|Разблокировать|Lock editing|Заблокировать/.test(ue.textContent)) {
+    const locked = /Unlock|Разблок/.test(ue.textContent);
+    ue.textContent = locked ? (ru ? "🔓 Разблокировать" : "🔓 Unlock to edit") : (ru ? "🔒 Заблокировать" : "🔒 Lock editing");
+  }
+  const ab = document.getElementById("adminBtn");
+  if (ab) { const on = /exit|Выйти|✓/.test(ab.textContent); ab.textContent = on ? (ru ? "⚙ Выйти из админа" : "⚙ Exit admin") : (ru ? "⚙ Режим админа" : "⚙ Admin mode"); }
+  const vb = document.getElementById("viewBadge"); if (vb) vb.textContent = ru ? "👁 Просмотр" : "👁 View only";
+  // sort dropdown options
+  const sortLabels = ru
+    ? { custom: "Своё (перетаскивание)", added: "Сначала новые", priority: "Сначала приоритет", title: "Название А–Я", year: "Год", my_rating: "Моя оценка", imdb_rating: "Оценка IMDb" }
+    : { custom: "Custom (drag to arrange)", added: "Newest added", priority: "Priority first", title: "Title A–Z", year: "Year", my_rating: "My rating", imdb_rating: "IMDb rating" };
+  document.querySelectorAll("#sortSel option").forEach(o => { if (sortLabels[o.value]) o.textContent = sortLabels[o.value]; });
+  // filter pills
+  const setPill = (id, en, rus) => { const el = document.getElementById(id); if (el) { const l = el.querySelector(".pill-lbl"); if (l) l.textContent = ru ? rus : en; } };
+  setPill("favOnly", "Favourites", "Избранное");
+  setPill("recOnly", "Recommended", "Рекомендую");
+  setPill("priOnly", "Priority", "Приоритет");
+  // view mode + size segs
+  document.querySelectorAll('#viewModeSeg button').forEach(b => {
+    if (b.dataset.mode === "cards") b.textContent = ru ? "▦ Карточки" : "▦ Cards";
+    if (b.dataset.mode === "list") b.textContent = ru ? "☰ Список" : "☰ List";
+  });
 }
 function displayTitle(it) {
   if (state.lang === "ru") return it.title_ru || it.title || "";
@@ -1423,7 +1474,7 @@ function renderTabs() {
   const sb = document.createElement("button");
   sb.className = "tab" + (state.showStats ? " active" : "");
   sb.dataset.cat = "__stats__";
-  sb.textContent = "📊 Stats";
+  sb.textContent = state.lang === "ru" ? "Статистика" : "Stats";
   sb.onclick = () => { state.showStats = true; markActiveTab(); renderView(); };
   el.appendChild(sb);
 }
@@ -1792,9 +1843,9 @@ function renderRow(it) {
   if (it.release_date) sub.push((it.release_sure ? "📅 " : "📅 ~") + escapeHtml(it.release_date));
   if (it.notes) sub.push("📝 " + escapeHtml(it.notes));
   const flags = [];
-  if (it.favourite) flags.push("⭐");
-  if (it.recommend) flags.push("👍");
-  if (it.priority) flags.push("🔺");
+  if (it.favourite) flags.push('<span class="ic-star">★</span>');
+  if (it.recommend) flags.push('<span class="ic-rec">♥</span>');
+  if (it.priority) flags.push("💡");
   r.innerHTML = poster +
     '<div class="row-main"><div class="row-title">' + escapeHtml(it.title || "Untitled") + '</div>' +
     (sub.length ? '<div class="row-sub">' + sub.map(s => "<span>" + s + "</span>").join("") + '</div>' : "") +
@@ -1848,9 +1899,9 @@ function renderCard(it) {
   else posterHtml = '<div class="poster placeholder">' + (it.category === "books" ? "📖" : "🎬") + '</div>';
 
   const flags = [];
-  if (it.favourite) flags.push('<span class="flag">⭐</span>');
-  if (it.recommend) flags.push('<span class="flag">👍</span>');
-  if (it.priority) flags.push('<span class="flag">🔺</span>');
+  if (it.favourite) flags.push('<span class="flag ic-star">★</span>');
+  if (it.recommend) flags.push('<span class="flag ic-rec">♥</span>');
+  if (it.priority) flags.push('<span class="flag ic-pri">💡</span>');
 
   const meta = [];
   if (it.year) meta.push('<span>' + escapeHtml(it.year) + '</span>');
@@ -1902,9 +1953,9 @@ function renderCard(it) {
     if (on) b.classList.add("on");
     b.onclick = (e) => { e.stopPropagation(); fn(); }; return b;
   };
-  actions.appendChild(mkBtn("⭐", "Toggle favourite", it.favourite, () => { it.favourite = !it.favourite; persistItem(it); }));
-  actions.appendChild(mkBtn("👍", "Toggle recommend", it.recommend, () => { it.recommend = !it.recommend; persistItem(it); }));
-  actions.appendChild(mkBtn("🔺", "Toggle priority", it.priority, () => { it.priority = !it.priority; persistItem(it); }));
+  actions.appendChild(mkBtn("★", "Toggle favourite", it.favourite, () => { it.favourite = !it.favourite; persistItem(it); }));
+  actions.appendChild(mkBtn("♥", "Toggle recommend", it.recommend, () => { it.recommend = !it.recommend; persistItem(it); }));
+  actions.appendChild(mkBtn("💡", "Toggle priority", it.priority, () => { it.priority = !it.priority; persistItem(it); }));
   const dots = mkBtn("⋯", "Change status", false, (e) => { openStatusMenu(it, actions); });
   actions.appendChild(dots);
   const pw = c.querySelector(".poster-wrap");
@@ -3193,9 +3244,9 @@ function init() {
   document.getElementById("search").oninput = e => { state.filter = e.target.value; renderGroups(); };
   document.getElementById("searchAll").onclick = e => { state.searchAll = !state.searchAll; e.currentTarget.classList.toggle("on", state.searchAll); renderGroups(); };
   document.getElementById("sortSel").onchange = e => { state.sort = e.target.value; renderGroups(); };
-  document.getElementById("favOnly").onchange = e => { state.favOnly = e.target.checked; renderGroups(); };
-  document.getElementById("recOnly").onchange = e => { state.recOnly = e.target.checked; renderGroups(); };
-  document.getElementById("priOnly").onchange = e => { state.priOnly = e.target.checked; renderGroups(); };
+  document.getElementById("favOnly").onclick = e => { state.favOnly = !state.favOnly; e.currentTarget.classList.toggle("on", state.favOnly); renderGroups(); };
+  document.getElementById("recOnly").onclick = e => { state.recOnly = !state.recOnly; e.currentTarget.classList.toggle("on", state.recOnly); renderGroups(); };
+  document.getElementById("priOnly").onclick = e => { state.priOnly = !state.priOnly; e.currentTarget.classList.toggle("on", state.priOnly); renderGroups(); };
 
   // View mode (cards / list) + size controls
   document.querySelectorAll("#viewModeSeg button").forEach(btn => {
@@ -3217,9 +3268,10 @@ function init() {
 
   // Language toggle
   document.querySelectorAll("#langSeg button").forEach(btn => {
-    btn.onclick = () => { state.lang = btn.dataset.lang; saveLang(); renderLangSeg(); renderTabs(); renderGroups(); };
+    btn.onclick = () => { state.lang = btn.dataset.lang; saveLang(); renderLangSeg(); applyUiLang(); renderTabs(); renderView(); };
   });
   renderLangSeg();
+  applyUiLang();
 
   // Multi-select + bulk actions
   document.getElementById("selectBtn").onclick = toggleSelectMode;
