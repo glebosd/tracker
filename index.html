@@ -34,6 +34,13 @@
     --header-bg: rgba(15,17,23,0.92);
   }
   * { box-sizing: border-box; }
+  .multi-status { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .multi-status label { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; cursor: pointer; }
+  .multi-status label.on { border-color: var(--accent); color: var(--accent-2); }
+  .genre-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+  .genre-chips button { font-size: 11px; background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); border-radius: 999px; padding: 2px 8px; cursor: pointer; }
+  .genre-chips button:hover { border-color: var(--accent); color: var(--text); }
+  .tr-btn { font-size: 10px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
   /* No blue text-selection highlight when clicking/shift-selecting cards */
   .card, .row, .tab, .group-head, .card-actions, .stars, .flags, .genre-head, .viewbadge, .seg, .btn {
     -webkit-user-select: none; user-select: none;
@@ -50,11 +57,9 @@
     -webkit-font-smoothing: antialiased;
     padding-bottom: 80px;
   }
+  .deck { position: sticky; top: 0; z-index: 20; background: var(--header-bg); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
   header {
-    position: sticky; top: 0; z-index: 20;
-    background: var(--header-bg);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border);
+    background: transparent;
     padding: 14px 16px 0;
   }
   .top-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -83,7 +88,7 @@
   }
   .tab.active { background: var(--accent); border-color: var(--accent); color: white; }
 
-  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 0 16px; margin: 14px 0; }
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 10px 16px; margin: 0; }
   .search { flex: 1; min-width: 180px; }
   input[type=text], input[type=number], input[type=url], select, textarea {
     background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
@@ -392,6 +397,7 @@
 
 <div id="syncFlash"></div>
 
+<div class="deck">
 <header>
   <div class="top-row">
     <span class="sync-dot" id="syncDot" title="Sync status"></span>
@@ -455,7 +461,7 @@
 </div>
 
 <div class="toolbar">
-  <div class="search"><input type="text" id="search" placeholder="Search titles, genres, notes…" /></div>
+  <div class="search"><input type="text" id="search" placeholder="Search titles, genres, notes…" /><label class="check" style="white-space:nowrap"><input type="checkbox" id="searchAll" /> 🌐 all categories</label></div>
   <select id="sortSel" style="width:auto">
     <option value="custom">✋ Custom (drag to arrange)</option>
     <option value="added">Newest added</option>
@@ -475,6 +481,7 @@
     </span>
     <span class="seg" id="sizeSeg"></span>
   </div>
+</div>
 </div>
 
 <div class="status-groups" id="groups"></div>
@@ -509,6 +516,11 @@
       <input type="text" id="f_title_ru" placeholder="Название по-русски" />
     </div>
 
+    <div class="row-inline" style="margin:-4px 0 12px">
+      <button type="button" class="btn small" id="fetchTitlesBtn" title="Look up info using the titles above, without changing them">↻ Fetch info using these titles</button>
+      <span class="autofill-note" id="fetchTitlesNote" style="margin:0"></span>
+    </div>
+
     <div class="grid2">
       <div class="field">
         <label>Status</label>
@@ -518,6 +530,19 @@
         <label>Type</label>
         <select id="f_type"></select>
       </div>
+    </div>
+
+    <div class="field" id="formatField" style="display:none">
+      <label>Format</label>
+      <select id="f_format">
+        <option value="series">Series</option>
+        <option value="film">Film</option>
+      </select>
+    </div>
+
+    <div class="field" id="multiStatusField">
+      <label>Also add to these sections <span style="color:var(--muted)">(creates a separate linked card in each)</span></label>
+      <div id="f_multi_status" class="multi-status"></div>
     </div>
 
     <div class="field">
@@ -538,7 +563,7 @@
     </div>
 
     <div class="grid2">
-      <div class="field"><label>My genre</label><input type="text" id="f_my_genre" placeholder="how you'd categorise it" /></div>
+      <div class="field"><label>My genre</label><input type="text" id="f_my_genre" placeholder="how you'd categorise it" /><div id="genreChips" class="genre-chips"></div></div>
       <div class="field"><label>My rating (/10)</label><input type="number" id="f_my_rating" min="0" max="10" step="0.5" placeholder="0–10" /></div>
     </div>
 
@@ -561,8 +586,8 @@
       <label class="check"><input type="checkbox" id="f_priority" /> 🔺 Priority next</label>
     </div>
 
-    <div class="field"><label>Description (English) <span style="color:var(--muted)">(over the blurred poster)</span></label><textarea id="f_description" placeholder="short synopsis…"></textarea></div>
-    <div class="field"><label>Description (Russian)</label><textarea id="f_description_ru" placeholder="краткое описание…"></textarea></div>
+    <div class="field"><label>Description (English) <button type="button" class="btn small tr-btn" id="trToEn" title="Translate from the Russian description">⇄ from RU</button></label><textarea id="f_description" placeholder="short synopsis…"></textarea></div>
+    <div class="field"><label>Description (Russian) <button type="button" class="btn small tr-btn" id="trToRu" title="Translate from the English description">⇄ from EN</button></label><textarea id="f_description_ru" placeholder="краткое описание…"></textarea></div>
     <div class="field"><label>Notes</label><textarea id="f_notes" placeholder="your thoughts…"></textarea></div>
 
     <div class="modal-actions">
@@ -815,6 +840,32 @@ function translateGenreString(g) {
   }
   return g;
 }
+
+/* ---- Status / caret label translation (item 1) ---- */
+const STATUS_RU = {
+  "In theatres / soon": "В кино / скоро", "To watch": "Посмотреть", "Watching": "Смотрю",
+  "Ongoing": "Онгоинг", "Finish watching": "Досмотреть", "To be released": "Выйдет",
+  "Watched": "Просмотрено", "Rewatch": "Пересмотреть",
+  "To read": "Прочитать", "Reading": "Читаю", "Read": "Прочитано", "Finished": "Завершено", "Dropped": "Брошено",
+  // anime film/series sub-carets (item 8)
+  "Films": "Фильмы", "Series": "Сериалы", "Film": "Фильм"
+};
+const TYPE_RU = { "animation": "Анимация", "real": "Не анимация", "book": "Книга", "poem": "Стихи" };
+const CAT_RU = { movies: "Фильмы", tv: "Сериалы", anime: "Аниме", manga: "Манга", books: "Книги и стихи" };
+function catLabel(k) {
+  if (state.lang === "ru") return CAT_RU[k] || CATEGORIES[k].label;
+  return CATEGORIES[k].label;
+}
+function displayStatus(st) {
+  if (state.lang === "ru") return STATUS_RU[st] || st;
+  return st; // en + both show English label
+}
+function displayType(t) {
+  if (state.lang === "ru") return TYPE_RU[t] || t;
+  const en = { "animation": "Animation", "real": "Non-animation", "book": "Book", "poem": "Poem" };
+  return en[t] || t;
+}
+
 // Free, no-key translation via MyMemory. Cached. Returns original on failure.
 async function translateText(text, from, to) {
   if (!text) return text;
@@ -837,7 +888,7 @@ async function fillMissingDescriptions(it) {
 }
 
 let state = { items: [], activeCat: "movies", filter: "", sort: "custom", favOnly: false, recOnly: false, priOnly: false, showStats: false,
-  viewMode: "cards", cardSize: "medium", listSize: "normal", lang: "both", selectMode: false, selected: {} };
+  viewMode: "cards", cardSize: "medium", listSize: "normal", lang: "both", selectMode: false, selected: {}, searchAll: false };
 let editingId = null;
 
 const VIEW_KEY = "myTracker.view.v1";
@@ -1064,7 +1115,7 @@ async function googleBooksSearch(query, author, limit) {
     const v = it.volumeInfo || {};
     let cover = "";
     if (v.imageLinks) cover = (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail || "").replace(/^http:/, "https:").replace(/&edge=curl/, "");
-    return { title: v.title || query, author: (v.authors || [])[0] || "", year: (v.publishedDate || "").slice(0, 4), poster: cover };
+    return { title: v.title || query, author: (v.authors || [])[0] || "", year: (v.publishedDate || "").slice(0, 4), poster: cover, description: (v.description || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim() };
   });
 }
 
@@ -1074,7 +1125,7 @@ async function bookSearch(query, author, many) {
   const out = [];
   const seen = new Set();
   const push = c => { if (!c || !c.title) return; const k = c.title.toLowerCase(); if (seen.has(k)) { // merge missing fields
-      const ex = out.find(x => x.title.toLowerCase() === k); if (ex) { ex.poster = ex.poster || c.poster; ex.author = ex.author || c.author; ex.year = ex.year || c.year; } return; }
+      const ex = out.find(x => x.title.toLowerCase() === k); if (ex) { ex.poster = ex.poster || c.poster; ex.author = ex.author || c.author; ex.year = ex.year || c.year; ex.description = ex.description || c.description; } return; }
     seen.add(k); out.push(c); };
   try { (await googleBooksSearch(query, author, many ? 6 : 1)).forEach(push); } catch {}
   try { const ol = await openLibrarySearch(query, author); if (ol) push(ol); } catch {}
@@ -1124,13 +1175,37 @@ async function applyTmdb(m) {
     const ruTitle = ru ? (m.isTV ? ru.name : ru.title) : "";
     const enField = document.getElementById("f_title");
     const ruField = document.getElementById("f_title_ru");
-    if (enTitle) enField.value = enTitle;
-    // Set the Russian field to the localized title when TMDB actually has a different one.
-    if (ruTitle && ruTitle !== enTitle) ruField.value = ruTitle;
-    else if (!ruField.value || ruField.value === enTitle) ruField.value = ""; // avoid duplicating EN into RU
+    if (!window._preserveTitles) {
+      if (enTitle) enField.value = enTitle;
+      // Set the Russian field to the localized title when TMDB actually has a different one.
+      if (ruTitle && ruTitle !== enTitle) ruField.value = ruTitle;
+      else if (!ruField.value || ruField.value === enTitle) ruField.value = ""; // avoid duplicating EN into RU
+    }
     note.textContent = "✓ From TMDB: " + enTitle + (m.year ? " (" + m.year + ")" : "") +
       (ruField.value ? "  •  RU: " + ruField.value : "  •  (no distinct Russian title on TMDB)");
   } catch { note.textContent = "Couldn't load that title — fill it in by hand."; }
+}
+
+// Fetch metadata using the titles already typed, WITHOUT overwriting them (item 4b)
+async function fetchWithCurrentTitles() {
+  const en = document.getElementById("f_title").value.trim();
+  const ru = document.getElementById("f_title_ru").value.trim();
+  const q = en || ru;
+  const fnote = document.getElementById("fetchTitlesNote");
+  if (!q) { fnote.textContent = "Type a title first."; return; }
+  window._preserveTitles = { title: en, title_ru: ru };
+  fnote.textContent = "Fetching info for the current titles…";
+  const search = document.getElementById("f_search");
+  const prev = search.value;
+  search.value = q;
+  try { await autofill(); } finally {
+    search.value = prev;
+    // restore the user's titles in case a single-result apply changed them
+    if (en) document.getElementById("f_title").value = en;
+    if (ru) document.getElementById("f_title_ru").value = ru;
+    fnote.textContent = "✓ Info fetched — your titles were kept.";
+    window._preserveTitles = null;
+  }
 }
 
 async function autofill() {
@@ -1197,7 +1272,8 @@ async function autofill() {
     const pick = (d) => {
       if (d.poster) document.getElementById("f_poster").value = d.poster;
       if (d.year) document.getElementById("f_year").value = d.year;
-      document.getElementById("f_title").value = d.title;
+      if (d.description && document.getElementById("f_description") && !document.getElementById("f_description").value) document.getElementById("f_description").value = d.description;
+      if (!window._preserveTitles) document.getElementById("f_title").value = d.title;
       if (d.author && document.getElementById("f_author") && !document.getElementById("f_author").value) document.getElementById("f_author").value = d.author;
       note.textContent = "✓ Found: " + d.title + (d.author ? " — " + d.author : "") + (d.year ? " (" + d.year + ")" : "");
     };
@@ -1227,8 +1303,10 @@ async function applyAniList(m) {
   if (m.score) document.getElementById("f_imdb_rating").value = m.score;   // reuse rating field (AniList score /10)
   if (m.genres) document.getElementById("f_imdb_genre").value = m.genres;
   if (!document.getElementById("f_type").value) document.getElementById("f_type").value = "animation";
+  if (m.description && document.getElementById("f_description") && !document.getElementById("f_description").value) document.getElementById("f_description").value = m.description;
   const enField = document.getElementById("f_title");
   const ruField = document.getElementById("f_title_ru");
+  if (window._preserveTitles) { note.textContent = "✓ From AniList — info updated, titles kept."; return; }
   if (m.en || m.romaji) enField.value = m.en || m.romaji;
   note.textContent = "✓ From AniList: " + (m.en || m.romaji) + (m.native ? " (" + m.native + ")" : "") + (m.year ? " " + m.year : "") + " — looking up Russian title…";
   // best-effort Russian title from Wikidata (by the English/romaji name)
@@ -1306,7 +1384,7 @@ function renderTabs() {
   orderedCatKeys().forEach(k => {
     const b = document.createElement("button");
     b.className = "tab" + (!state.showStats && state.activeCat === k ? " active" : "");
-    b.textContent = (adminMode ? "⋮⋮ " : "") + CATEGORIES[k].label;
+    b.textContent = (adminMode ? "⋮⋮ " : "") + catLabel(k);
     b.dataset.cat = k;
     b.onclick = () => { state.showStats = false; state.activeCat = k; markActiveTab(); renderView(); };
     if (adminMode) {
@@ -1519,6 +1597,26 @@ function renderGroups() {
   const cat = CATEGORIES[state.activeCat];
   const inCat = state.items.filter(it => it.category === state.activeCat && matchesFilter(it));
 
+  // Cross-category search (item 4a): when enabled and a query is present, show matches from ALL categories
+  if (state.searchAll && state.filter.trim()) {
+    let any = false;
+    orderedCatKeys().forEach(ck => {
+      const items = sortItems(state.items.filter(it => it.category === ck && matchesFilter(it)));
+      if (!items.length) return;
+      any = true;
+      const group = document.createElement("div");
+      group.className = "group";
+      const head = document.createElement("div");
+      head.className = "group-head";
+      head.innerHTML = '<h3>' + escapeHtml(catLabel(ck)) + '</h3><span class="group-count">' + items.length + '</span>';
+      group.appendChild(head);
+      group.appendChild(renderItemsContainer(items));
+      wrap.appendChild(group);
+    });
+    if (!any) wrap.innerHTML = '<div class="empty">No matches in any category for “' + escapeHtml(state.filter) + '”.</div>';
+    return;
+  }
+
   if (inCat.length === 0) {
     // Fuzzy fallback: exact search found nothing — offer close matches across ALL categories
     if (state.filter.trim()) {
@@ -1551,7 +1649,7 @@ function renderGroups() {
     group.className = "group";
     const head = document.createElement("div");
     head.className = "group-head collapsible";
-    head.innerHTML = '<span class="caret">' + (collapsed ? "▸" : "▾") + '</span>' + (adminMode ? '<span style="color:var(--muted);cursor:grab">⋮⋮</span> ' : '') + '<h3>' + escapeHtml(status) +
+    head.innerHTML = '<span class="caret">' + (collapsed ? "▸" : "▾") + '</span>' + (adminMode ? '<span style="color:var(--muted);cursor:grab">⋮⋮</span> ' : '') + '<h3>' + escapeHtml(displayStatus(status)) +
       '</h3><span class="group-count">' + items.length + '</span>';
     head.onclick = () => { toggleCollapsed(collapseKey); renderGroups(); };
     if (adminMode) {
@@ -1576,21 +1674,33 @@ function renderGroups() {
         const byGenre = {};
         items.forEach(it => { const g = it.my_genre || "Other"; (byGenre[g] = byGenre[g] || []).push(it); });
         Object.keys(byGenre).sort().forEach(genre => {
-          appendSubgroup(group, "genre|" + genre, genre, byGenre[genre]);
+          appendSubgroup(group, "genre|" + genre, translateGenreString(genre), byGenre[genre]);
         });
+      // Anime → To watch & Watched: split Films vs Series (item 8)
+      } else if (state.activeCat === "anime" && (status === "To watch" || status === "Watched")) {
+        const films = items.filter(it => it.format === "film");
+        const series = items.filter(it => it.format !== "film");
+        const filmL = state.lang === "ru" ? "Фильмы" : "Films";
+        const serL = state.lang === "ru" ? "Сериалы" : "Series";
+        if (films.length) appendSubgroup(group, "aformat|" + status + "|film", filmL, films);
+        if (series.length) appendSubgroup(group, "aformat|" + status + "|series", serL, series);
       // Movies & TV → Watched: split Animation vs Non-animation
       } else if ((state.activeCat === "movies" || state.activeCat === "tv") && status === "Watched") {
         const anim = items.filter(it => it.type === "animation");
         const real = items.filter(it => it.type !== "animation");
-        if (anim.length) appendSubgroup(group, "type|" + state.activeCat + "|anim", "🎨 Animation", anim);
-        if (real.length) appendSubgroup(group, "type|" + state.activeCat + "|real", "🎬 Non-animation", real);
+        const animL = state.lang === "ru" ? "🎨 Анимация" : "🎨 Animation";
+        const realL = state.lang === "ru" ? "🎬 Не анимация" : "🎬 Non-animation";
+        if (anim.length) appendSubgroup(group, "type|" + state.activeCat + "|anim", animL, anim);
+        if (real.length) appendSubgroup(group, "type|" + state.activeCat + "|real", realL, real);
       // Books → split Books vs Poems (poems tagged my_genre == "Poem")
       } else if (state.activeCat === "books") {
         const isPoem = it => it.type === "poem" || (it.my_genre || "").toLowerCase() === "poem";
         const poems = items.filter(isPoem);
         const books = items.filter(it => !isPoem(it));
-        if (books.length) appendSubgroup(group, "kind|books|" + status, "📖 Books", books);
-        if (poems.length) appendSubgroup(group, "kind|poems|" + status, "📝 Poems", poems);
+        const bookL = state.lang === "ru" ? "📖 Книги" : "📖 Books";
+        const poemL = state.lang === "ru" ? "📝 Стихи" : "📝 Poems";
+        if (books.length) appendSubgroup(group, "kind|books|" + status, bookL, books);
+        if (poems.length) appendSubgroup(group, "kind|poems|" + status, poemL, poems);
       } else {
         group.appendChild(renderItemsContainer(items));
       }
@@ -1831,7 +1941,7 @@ function fillCategorySelect(sel, val) {
   sel.innerHTML = "";
   CAT_KEYS.forEach(k => {
     const o = document.createElement("option");
-    o.value = k; o.textContent = CATEGORIES[k].label;
+    o.value = k; o.textContent = catLabel(k);
     if (k === val) o.selected = true;
     sel.appendChild(o);
   });
@@ -1841,7 +1951,7 @@ function fillStatusSelect(catKey, val) {
   sel.innerHTML = "";
   CATEGORIES[catKey].statuses.forEach(s => {
     const o = document.createElement("option");
-    o.value = s; o.textContent = s;
+    o.value = s; o.textContent = displayStatus(s);
     if (s === val) o.selected = true;
     sel.appendChild(o);
   });
@@ -1849,8 +1959,47 @@ function fillStatusSelect(catKey, val) {
   document.getElementById("progressField").style.display = cat.progress ? "block" : "none";
   if (cat.progress && cat.progressLabel) document.getElementById("progressLabel").textContent = cat.progressLabel;
   document.getElementById("authorField").style.display = (catKey === "books") ? "block" : "none";
+  document.getElementById("formatField").style.display = (catKey === "anime") ? "block" : "none";
   fillTypeSelect(catKey);
+  buildMultiStatus(catKey, val);
   toggleReleaseField();
+}
+// Multi-status "also add to" checkboxes (item 2)
+function buildMultiStatus(catKey, primary) {
+  const wrap = document.getElementById("f_multi_status");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+  CATEGORIES[catKey].statuses.forEach(s => {
+    if (s === primary) return; // primary is the main Status select
+    const lab = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.value = s;
+    cb.onchange = () => lab.classList.toggle("on", cb.checked);
+    lab.appendChild(cb);
+    lab.appendChild(document.createTextNode(" " + displayStatus(s)));
+    wrap.appendChild(lab);
+  });
+}
+// Genre chip chooser for the My genre field (item 5b)
+function buildGenreChips() {
+  const wrap = document.getElementById("genreChips");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+  const used = new Set();
+  state.items.forEach(it => { if (it.my_genre) it.my_genre.split(/[,/]/).forEach(g => { const t = g.trim(); if (t) used.add(t); }); });
+  ["Action", "Comedy", "Drama", "Fantasy", "Sci-Fi", "Romance", "Thriller", "Horror", "Slice of life", "Mystery", "Adventure", "Psychological", "Poem"].forEach(c => used.add(c));
+  Array.from(used).sort().forEach(g => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = translateGenreString(g);
+    b.onclick = () => {
+      const f = document.getElementById("f_my_genre");
+      const cur = f.value.trim();
+      const parts = cur ? cur.split(/,\s*/) : [];
+      if (!parts.includes(g)) { parts.push(g); f.value = parts.join(", "); }
+    };
+    wrap.appendChild(b);
+  });
 }
 function fillTypeSelect(catKey, val) {
   const sel = document.getElementById("f_type");
@@ -1877,9 +2026,9 @@ async function openDetail(id) {
   const otherTitle = state.lang === "ru" ? it.title : it.title_ru;
   if (otherTitle && otherTitle !== displayTitle(it)) rows.push([state.lang === "ru" ? "English title" : "Russian title", otherTitle]);
   if (it.category === "books" && it.author) rows.push(["Author", it.author]);
-  rows.push(["Category", CATEGORIES[it.category].label]);
-  rows.push(["Status", it.status]);
-  if (it.type) rows.push(["Type", it.type === "animation" ? "Animation" : "Live-action"]);
+  rows.push(["Category", catLabel(it.category)]);
+  rows.push(["Status", displayStatus(it.status)]);
+  if (it.type) rows.push(["Type", displayType(it.type)]);
   if (it.year) rows.push(["Year", it.year]);
   if (it.imdb_rating) rows.push(["Rating", it.imdb_rating]);
   if (it.my_rating) rows.push(["My rating", it.my_rating + "/10"]);
@@ -1992,6 +2141,9 @@ function openEditor(id) {
   g("f_title").value = it?.title || "";
   g("f_title_ru").value = it?.title_ru || "";
   g("f_type").value = it?.type || "";
+  const ff = g("f_format"); if (ff) ff.value = it?.format || "series";
+  buildGenreChips();
+  const msf = document.getElementById("multiStatusField"); if (msf) msf.style.display = it ? "none" : "block";
   g("f_poster").value = it?.poster || "";
   g("f_year").value = it?.year || "";
   g("f_imdb_rating").value = it?.imdb_rating || "";
@@ -2023,6 +2175,7 @@ async function saveItem() {
     title: g("f_title"),
     title_ru: g("f_title_ru"),
     type: g("f_type"),
+    format: (cat === "anime" ? (document.getElementById("f_format") ? document.getElementById("f_format").value : "series") : ""),
     poster: g("f_poster"),
     year: g("f_year"),
     imdb_rating: g("f_imdb_rating"),
@@ -2040,6 +2193,7 @@ async function saveItem() {
     priority: document.getElementById("f_priority").checked,
     notes: document.getElementById("f_notes").value,
     added: editingId ? (state.items.find(x => x.id === editingId)?.added || Date.now()) : Date.now(),
+    order: editingId ? (state.items.find(x => x.id === editingId)?.order) : undefined,
     primary_lang: (editingId ? (state.items.find(x => x.id === editingId)?.primary_lang) : null)
       || window._lastSearchLang
       || (hasCyrillic(g("f_title")) && !g("f_title_ru") ? "ru" : "en")
@@ -2048,10 +2202,32 @@ async function saveItem() {
 
   const idx = state.items.findIndex(x => x.id === item.id);
   if (idx >= 0) state.items[idx] = item; else state.items.push(item);
+
+  // Multi-status: create one separate linked card per extra chosen section (item 2)
+  const extraCards = [];
+  if (!editingId) {
+    document.querySelectorAll("#f_multi_status input:checked").forEach(cb => {
+      const st = cb.value;
+      if (st === item.status) return;
+      const copy = Object.assign({}, item, {
+        id: (crypto.randomUUID ? crypto.randomUUID() : "id" + Date.now() + Math.random().toString(16).slice(2)),
+        status: st, added: Date.now()
+      });
+      state.items.push(copy);
+      extraCards.push(copy);
+    });
+  }
+
   saveLocal();
   closeEditor();
   renderGroups();
-  if (supa) { try { await supaUpsert(item); setSyncDot("on"); syncFlash(true); } catch { setSyncDot("err"); syncFlash(false); } }
+  if (supa) {
+    try {
+      await supaUpsert(item);
+      for (const c of extraCards) { try { await supaUpsert(c); } catch {} }
+      setSyncDot("on"); syncFlash(true);
+    } catch { setSyncDot("err"); syncFlash(false); }
+  }
   else { syncFlash(true); }
 }
 
@@ -2701,14 +2877,21 @@ function toggleTheme() { /* legacy no-op; dropdown used instead */ }
 async function findDuplicates() {
   const seen = {}, dupes = [];
   state.items.forEach(it => {
-    const k = it.category + "|" + String(it.title).trim().toLowerCase() + "|" + it.status;
+    // Type-aware: an Animation and a Non-animation with the same title are NOT duplicates.
+    const typeKey = (it.type === "animation") ? "anim" : "real";
+    const k = it.category + "|" + String(it.title).trim().toLowerCase() + "|" + it.status + "|" + typeKey;
     if (seen[k]) dupes.push(it); else seen[k] = it;
   });
-  if (!dupes.length) { alert("No duplicates found — every title is unique within its category and status."); return; }
-  const list = dupes.slice(0, 40).map(d => "• " + (CATEGORIES[d.category] ? CATEGORIES[d.category].label : d.category) + " / " + d.status + " — " + d.title).join("\n");
+  if (!dupes.length) { alert("No duplicates found — every title is unique within its category, status and type (animation vs non-animation count as different)."); return; }
+  const typeLabel = it => it.type === "animation" ? "🎨 animation" : (it.type ? "🎬 non-animation" : "");
+  const list = dupes.slice(0, 40).map(d => {
+    const cat = CATEGORIES[d.category] ? CATEGORIES[d.category].label : d.category;
+    const tl = typeLabel(d);
+    return "• " + cat + " → " + d.status + (tl ? " (" + tl + ")" : "") + " — " + d.title;
+  }).join("\n");
   const more = dupes.length > 40 ? "\n…and " + (dupes.length - 40) + " more" : "";
   if (!confirm("Found " + dupes.length + " duplicate entr" + (dupes.length === 1 ? "y" : "ies") +
-    " (same title, category & status):\n\n" + list + more + "\n\nRemove the extras, keeping one of each?")) return;
+    " (same title, category, status AND type):\n\n" + list + more + "\n\nRemove the extras, keeping one of each?")) return;
   const ids = new Set(dupes.map(d => d.id));
   state.items = state.items.filter(x => !ids.has(x.id));
   saveLocal();
@@ -2762,6 +2945,41 @@ async function importBooks() {
 }
 
 /* ---- Multi-select + bulk actions ---- */
+// Before/after confirmation for a proposed fetch change (item 7).
+// Returns a Promise<boolean>: true = apply, false = skip.
+function confirmChange(before, after) {
+  return new Promise(resolve => {
+    const ov = document.createElement("div");
+    ov.className = "overlay open";
+    ov.style.zIndex = "200";
+    const fields = [
+      ["Title (EN)", before.title, after.title],
+      ["Title (RU)", before.title_ru, after.title_ru],
+      ["Year", before.year, after.year],
+      ["Rating", before.imdb_rating, after.imdb_rating],
+      ["Genre", before.imdb_genre, after.imdb_genre]
+    ];
+    const rows = fields.filter(([, b, a]) => (b || "") !== (a || "")).map(([lab, b, a]) =>
+      '<tr><td style="color:var(--muted);padding:4px 8px 4px 0">' + escapeHtml(lab) + '</td>' +
+      '<td style="padding:4px 8px;color:var(--danger)">' + escapeHtml(b || "—") + '</td>' +
+      '<td style="padding:4px 8px;color:var(--good)">→ ' + escapeHtml(a || "—") + '</td></tr>'
+    ).join("");
+    ov.innerHTML =
+      '<div class="modal" style="max-width:520px">' +
+        '<h2 style="margin-top:0">Apply this change?</h2>' +
+        '<div style="color:var(--muted);font-size:13px;margin-bottom:8px">Fetched match for <b>' + escapeHtml(before.title || before.title_ru || "this item") + '</b>:</div>' +
+        (after.poster && after.poster !== before.poster ? '<img src="' + escapeAttr(after.poster) + '" style="max-height:160px;border-radius:8px;margin-bottom:8px" />' : '') +
+        '<table style="font-size:13px;border-collapse:collapse;margin-bottom:12px"><tr><td></td><td style="color:var(--muted)">before</td><td style="color:var(--muted)">after</td></tr>' + (rows || '<tr><td colspan="3" style="color:var(--muted);padding:6px">Only poster / description differ.</td></tr>') + '</table>' +
+        '<div class="modal-actions">' +
+          '<button class="btn" id="ccSkip">Skip this one</button>' +
+          '<button class="btn primary" id="ccApply">Apply</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    ov.querySelector("#ccSkip").onclick = () => { ov.remove(); resolve(false); };
+    ov.querySelector("#ccApply").onclick = () => { ov.remove(); resolve(true); };
+  });
+}
 function toggleSelectMode() {
   state.selectMode = !state.selectMode;
   if (!state.selectMode) state.selected = {};
@@ -2841,6 +3059,7 @@ async function bulkFetch() {
   let n = 0, found = 0; const uncertainList = [];
   for (const it of items) {
     prog.textContent = "Fetching " + (++n) + "/" + items.length + "…";
+    const before = { title: it.title, title_ru: it.title_ru, year: it.year, imdb_rating: it.imdb_rating, imdb_genre: it.imdb_genre, poster: it.poster, description: it.description, description_ru: it.description_ru, type: it.type, author: it.author };
     let filled = false, cands = null;
     try {
       if (it.category === "anime" || it.category === "manga") {
@@ -2849,6 +3068,7 @@ async function bulkFetch() {
           const m = r[0];
           if (titleMatches(it.title, [m.en, m.romaji, m.native, ...(m.synonyms || [])])) {
             if (m.poster) it.poster = m.poster; if (m.year) it.year = m.year; if (m.score) it.imdb_rating = m.score; if (m.genres) it.imdb_genre = m.genres; if (!it.type) it.type = "animation";
+            if (m.description && !it.description) it.description = m.description;
             if ((m.en || m.romaji) && !hasCyrillic(it.title)) it.title = m.en || m.romaji;
             if (!it.title_ru) it.title_ru = m.native || "";
             filled = true;
@@ -2873,11 +3093,20 @@ async function bulkFetch() {
       } else {
         const results = await bookSearch(it.title, it.author, true);
         const info = results[0];
-        if (info && titleMatches(it.title, [info.title])) { if (info.poster) it.poster = info.poster; if (info.year) it.year = info.year; if (!it.author && info.author) it.author = info.author; filled = true; }
+        if (info && titleMatches(it.title, [info.title])) { if (info.poster) it.poster = info.poster; if (info.year) it.year = info.year; if (!it.author && info.author) it.author = info.author; if (info.description && !it.description) it.description = info.description; filled = true; }
         else if (results.length) cands = results.map(r => ({ src: "book", raw: r, label: r.title + (r.author ? " — " + r.author : ""), poster: r.poster }));
       }
     } catch {}
-    if (filled) { found++; await fillMissingDescriptions(it); saveLocal(); if (supa) { try { await supaUpsert(it); } catch {} } }
+    if (filled) {
+      const titleChanged = (before.title || "") !== (it.title || "") || (before.title_ru || "") !== (it.title_ru || "");
+      let apply = true;
+      if (titleChanged) {
+        const after = { title: it.title, title_ru: it.title_ru, year: it.year, imdb_rating: it.imdb_rating, imdb_genre: it.imdb_genre, poster: it.poster };
+        apply = await confirmChange(before, after);
+      }
+      if (apply) { found++; await fillMissingDescriptions(it); saveLocal(); if (supa) { try { await supaUpsert(it); } catch {} } }
+      else { Object.assign(it, before); } // user skipped — restore original
+    }
     else if (cands && cands.length) uncertainList.push({ it, cands });
   }
   saveLocal(); renderGroups(); updateBulkCount();
@@ -2900,7 +3129,25 @@ function init() {
   document.getElementById("cancelBtn").onclick = closeEditor;
   document.getElementById("deleteBtn").onclick = deleteItem;
   document.getElementById("f_search").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); autofill(); } });
-  document.getElementById("f_status").addEventListener("change", toggleReleaseField);
+  document.getElementById("f_status").addEventListener("change", () => { toggleReleaseField(); buildMultiStatus(document.getElementById("f_category").value, document.getElementById("f_status").value); });
+
+  // Fetch info using the titles already typed (item 4b)
+  document.getElementById("fetchTitlesBtn").onclick = fetchWithCurrentTitles;
+  // Translate one description from the other language (item 6)
+  document.getElementById("trToEn").onclick = async () => {
+    const src = document.getElementById("f_description_ru").value.trim();
+    if (!src) { document.getElementById("fetchTitlesNote").textContent = "No Russian description to translate from."; return; }
+    const btn = document.getElementById("trToEn"); const old = btn.textContent; btn.textContent = "…";
+    const t = await translateText(src, "ru", "en");
+    document.getElementById("f_description").value = t; btn.textContent = old;
+  };
+  document.getElementById("trToRu").onclick = async () => {
+    const src = document.getElementById("f_description").value.trim();
+    if (!src) { document.getElementById("fetchTitlesNote").textContent = "No English description to translate from."; return; }
+    const btn = document.getElementById("trToRu"); const old = btn.textContent; btn.textContent = "…";
+    const t = await translateText(src, "en", "ru");
+    document.getElementById("f_description_ru").value = t; btn.textContent = old;
+  };
 
   // Add an Auto-fill button next to the search box dynamically
   const af = document.createElement("button");
@@ -2908,9 +3155,10 @@ function init() {
   af.onclick = autofill;
   document.getElementById("autofillNote").parentElement.insertBefore(af, document.getElementById("autofillNote"));
 
-  document.getElementById("f_category").onchange = e => fillStatusSelect(e.target.value, null);
+  document.getElementById("f_category").onchange = e => { fillStatusSelect(e.target.value, null); buildGenreChips(); };
 
   document.getElementById("search").oninput = e => { state.filter = e.target.value; renderGroups(); };
+  document.getElementById("searchAll").onchange = e => { state.searchAll = e.target.checked; renderGroups(); };
   document.getElementById("sortSel").onchange = e => { state.sort = e.target.value; renderGroups(); };
   document.getElementById("favOnly").onchange = e => { state.favOnly = e.target.checked; renderGroups(); };
   document.getElementById("recOnly").onchange = e => { state.recOnly = e.target.checked; renderGroups(); };
@@ -2936,7 +3184,7 @@ function init() {
 
   // Language toggle
   document.querySelectorAll("#langSeg button").forEach(btn => {
-    btn.onclick = () => { state.lang = btn.dataset.lang; saveLang(); renderLangSeg(); renderGroups(); };
+    btn.onclick = () => { state.lang = btn.dataset.lang; saveLang(); renderLangSeg(); renderTabs(); renderGroups(); };
   });
   renderLangSeg();
 
