@@ -101,6 +101,7 @@
   .ic-star { color: var(--star); }
   .ic-rec { color: var(--accent-2); }
   .ic-pri { filter: grayscale(0.2); }
+  #sortSel { border-radius: 999px; padding-left: 14px; padding-right: 30px; }
   .search-wrap { position: relative; }
   .search-wrap input { padding-right: 42px; }
   .search-all { position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
@@ -140,13 +141,14 @@
   .poster-wrap { position: relative; width: 100%; }
   .book-cover {
     display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-    padding: 16% 12% 12%; text-align: center; color: #241f1a;
-    background: linear-gradient(150deg, #f7f4ee 0%, #ece6da 100%);
-    box-shadow: inset 3px 0 6px rgba(0,0,0,0.12), inset -1px 0 0 rgba(0,0,0,0.05);
+    padding: 16% 12% 12%; text-align: center; color: #1a1712 !important;
+    background: #f2ece0 !important;
+    background-image: linear-gradient(150deg, #faf7f0 0%, #e8e0d1 100%) !important;
+    box-shadow: inset 4px 0 8px rgba(0,0,0,0.14), inset -1px 0 0 rgba(0,0,0,0.05);
   }
-  .book-cover .bc-title { font-family: Georgia, "Times New Roman", serif; font-weight: 600; font-size: clamp(13px, 2.2vw, 20px); line-height: 1.2; }
-  .book-cover .bc-mark { color: #b98a86; font-size: 20px; opacity: 0.7; }
-  .book-cover .bc-author { font-family: Georgia, "Times New Roman", serif; font-size: clamp(10px, 1.5vw, 13px); letter-spacing: 0.5px; border-top: 1px solid rgba(0,0,0,0.18); padding-top: 6px; }
+  .book-cover .bc-title { font-family: Georgia, "Times New Roman", serif; font-weight: 700; font-size: clamp(13px, 2.2vw, 20px); line-height: 1.2; color: #171310; }
+  .book-cover .bc-mark { color: #a85a55; font-size: 20px; opacity: 0.85; }
+  .book-cover .bc-author { font-family: Georgia, "Times New Roman", serif; font-size: clamp(10px, 1.5vw, 13px); letter-spacing: 0.5px; color: #3a332a; border-top: 1px solid rgba(0,0,0,0.28); padding-top: 6px; }
   .card-actions {
     position: absolute; left: 0; right: 0; bottom: 0;
     display: none; gap: 4px; justify-content: space-between; align-items: stretch;
@@ -2154,7 +2156,11 @@ async function openDetail(id) {
   if (it.my_genre) rows.push([L("My genre", "Мой жанр"), translateGenreString(it.my_genre)]);
   if (it.progress) rows.push([L("Progress", "Прогресс"), it.progress]);
   if (it.release_date) rows.push([L("Release", "Выход"), (it.release_sure ? "" : "~") + it.release_date]);
-  const flags = [it.favourite ? "⭐ Favourite" : "", it.recommend ? "👍 Recommend" : "", it.priority ? "🔺 Priority" : ""].filter(Boolean).join("  ");
+  const flags = [
+    it.favourite ? '<span class="ic-star">★</span> ' + (ruL ? "Избранное" : "Favourite") : "",
+    it.recommend ? '<span class="ic-rec">♥</span> ' + (ruL ? "Рекомендую" : "Recommend") : "",
+    it.priority ? '💡 ' + (ruL ? "Приоритет" : "Priority") : ""
+  ].filter(Boolean).join("  ");
 
   const closeX = '<button id="detailX" title="Close" style="position:absolute;top:10px;right:12px;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1">✕</button>';
   // short summary: a couple of key facts
@@ -2595,64 +2601,64 @@ function classifyNote(text) {
     if (isSep(l)) continue;
 
     /* ---- Top block switches (these lines carry no title) ---- */
-    if (l === "аниме") { block = "anime"; cur = null; animeSub = ""; continue; }
-    if (l === "манга") { block = "manga"; setSection("manga", "Finished", true); continue; }
-    if (l === "книги и стихи") { block = "books"; cur = null; continue; }
-    // bare "Сериалы" (no colon) at top level = TV block
-    if (l === "сериалы") { block = "tv"; cur = null; animeSub = ""; continue; }
-    // "Фильмы" at top level = Movies block
-    if (l === "фильмы") { block = "movies"; cur = null; movieGenre = ""; continue; }
+    if (l === "аниме" || l === "anime") { block = "anime"; cur = null; animeSub = ""; continue; }
+    if (l === "манга" || l === "manga") { block = "manga"; setSection("manga", "Finished", true); continue; }
+    if (l === "книги и стихи" || l === "books" || l === "books and poems" || l === "books & poems" || l === "poems") { block = "books"; cur = null; continue; }
+    // bare "Сериалы"/"TV" (no colon) at top level = TV block
+    if (l === "сериалы" || l === "tv" || l === "tv series" || l === "series") { block = "tv"; cur = null; animeSub = ""; continue; }
+    // "Фильмы"/"Movies" at top level = Movies block
+    if (l === "фильмы" || l === "movies" || l === "films") { block = "movies"; cur = null; movieGenre = ""; continue; }
 
     /* ---- Movie sections (only meaningful inside the movies block) ---- */
     if (block === "movies") {
-      if (/^в кино сейчас/.test(l)) { setSection("movies", "In theatres / soon", false); movieGenre = ""; continue; }
-      if (/^анимация/.test(l)) { setSection("movies", "To watch", false, { anim: true }); movieGenre = ""; continue; }
-      if (/^пересмотреть/.test(l)) { setSection("movies", "Rewatch", false); movieGenre = ""; continue; }
-      if (/^живые актеры/.test(l)) { setSection("movies", "To watch", false); movieGenre = ""; continue; }
-      if (/^просмотрено мультфильмы/.test(l)) { setSection("movies", "Watched", true, { anim: true }); movieGenre = ""; continue; }
-      if (/^просмотрено фильмы/.test(l)) { setSection("movies", "Watched", true); movieGenre = ""; continue; }
-      if (/^смешанное/.test(l)) { movieGenre = ""; continue; }
-      if (/^посмотреть:?$/.test(l)) { setSection("movies", "To watch", false); movieGenre = ""; continue; }
-      if (/^пересмотреть:?/.test(l)) { setSection("movies", "Rewatch", false); movieGenre = ""; continue; }
+      if (/^в кино сейчас|^in theat|^in cinema/.test(l)) { setSection("movies", "In theatres / soon", false); movieGenre = ""; continue; }
+      if (/^анимация|^animation$|^animated/.test(l)) { setSection("movies", "To watch", false, { anim: true }); movieGenre = ""; continue; }
+      if (/^пересмотреть|^rewatch/.test(l)) { setSection("movies", "Rewatch", false); movieGenre = ""; continue; }
+      if (/^живые актеры|^live[- ]?action/.test(l)) { setSection("movies", "To watch", false); movieGenre = ""; continue; }
+      if (/^просмотрено мультфильмы|^watched animation|^watched animated/.test(l)) { setSection("movies", "Watched", true, { anim: true }); movieGenre = ""; continue; }
+      if (/^просмотрено фильмы|^watched movies|^watched films|^watched$/.test(l)) { setSection("movies", "Watched", true); movieGenre = ""; continue; }
+      if (/^смешанное|^mixed|^misc/.test(l)) { movieGenre = ""; continue; }
+      if (/^посмотреть:?$|^to watch:?$/.test(l)) { setSection("movies", "To watch", false); movieGenre = ""; continue; }
+      if (/^пересмотреть:?|^rewatch:?/.test(l)) { setSection("movies", "Rewatch", false); movieGenre = ""; continue; }
       // genre sub-headers under "Живые актеры" (no bullet, short, not a known keyword)
       if (cur && cur.status === "To watch" && !/^[◦•*\-–—\[]/.test(line.trim()) && !/^\d+\./.test(line.trim()) && l.length < 45
-          && /комеди|семейн|драма|рама|триллер|sci-?fi|психолог|романтик|фантастик|ужас|детектив|боевик|приключен|смешанное|документал/.test(l)) {
+          && /комеди|семейн|драма|рама|триллер|sci-?fi|психолог|романтик|фантастик|ужас|детектив|боевик|приключен|смешанное|документал|comedy|family|drama|thriller|romance|fantasy|horror|mystery|action|adventure|documentary/.test(l)) {
         movieGenre = line.trim(); continue;
       }
     }
 
     /* ---- Anime sub-headers ---- */
-    if (l === "фильмы:" || l === "фильмы" || l === "полнометражные:" || l === "полнометражные") {
+    if (l === "фильмы:" || l === "фильмы" || l === "полнометражные:" || l === "полнометражные" || l === "films:" || l === "films" || l === "movies:") {
       animeSub = "films";
       if (block === "anime") setSection("anime", block === "anime" && cur && cur.status === "Watched" ? "Watched" : "To watch", false);
       continue;
     }
-    if (l === "сериалы:" ) { animeSub = "series"; continue; }
+    if (l === "сериалы:" || l === "series:" ) { animeSub = "series"; continue; }
 
     /* ---- Section headers (status within a block) ---- */
     // Books
-    if (/^прочитать/.test(l)) { setSection("books", "To read", false); continue; }
-    if (/^прочитано/.test(l)) { setSection("books", "Read", true); continue; }
-    if (/любимые стихи|любимые поэмы/.test(l)) { setSection("books", "Read", true, { poem: true }); continue; }
+    if (/^прочитать|^to read/.test(l)) { setSection("books", "To read", false); continue; }
+    if (/^прочитано|^read$|^have read/.test(l)) { setSection("books", "Read", true); continue; }
+    if (/любимые стихи|любимые поэмы|favou?rite poems|favou?rite poetry/.test(l)) { setSection("books", "Read", true, { poem: true }); continue; }
     // Anime statuses
-    if (/^онгоинги/.test(l)) { setSection("anime", "Ongoing", false); continue; }
-    if (/^досмотреть/.test(l)) { setSection("anime", "Finish watching", false); continue; }
-    if (/^пересмотреть/.test(l)) { setSection("anime", "Rewatch", false); continue; }
-    if (/^может выйдет/.test(l)) { setSection("anime", "To be released", false, { maybe: true }); continue; }
-    if (/^выйдет/.test(l)) { setSection("anime", "To be released", false); continue; }
+    if (/^онгоинги|^ongoing/.test(l)) { setSection("anime", "Ongoing", false); continue; }
+    if (/^досмотреть|^finish watching|^to finish/.test(l)) { setSection("anime", "Finish watching", false); continue; }
+    if (/^пересмотреть|^rewatch/.test(l)) { setSection("anime", "Rewatch", false); continue; }
+    if (/^может выйдет|^maybe releasing|^maybe coming/.test(l)) { setSection("anime", "To be released", false, { maybe: true }); continue; }
+    if (/^выйдет|^to be released|^upcoming|^coming soon/.test(l)) { setSection("anime", "To be released", false); continue; }
     // TV-specific "Просмотрено" (live actors / animation) — check BEFORE generic просмотрено
-    if (/живые актеры/.test(l)) { setSection("tv", "Watched", true); continue; }
-    if (/просмотрено анимация/.test(l)) { setSection("tv", "Watched", true, { anim: true }); continue; }
-    // Generic ПРОСМОТРЕНО inside anime block = anime watched
-    if (/^просмотрено/.test(l)) {
+    if (/живые актеры|live[- ]?action/.test(l)) { setSection("tv", "Watched", true); continue; }
+    if (/просмотрено анимация|watched animation/.test(l)) { setSection("tv", "Watched", true, { anim: true }); continue; }
+    // Generic ПРОСМОТРЕНО / WATCHED inside anime block = anime watched
+    if (/^просмотрено|^watched/.test(l)) {
       if (block === "tv") setSection("tv", "Watched", true);
       else setSection("anime", "Watched", true);
       continue;
     }
-    // "Посмотреть:" = to watch (TV or anime depending on block)
-    if (/^посмотреть:?$/.test(l)) { setSection(block === "anime" ? "anime" : "tv", "To watch", false); continue; }
-    // "Досмотреть:" with colon inside TV block
-    if (/^досмотреть:?$/.test(l) && block === "tv") { setSection("tv", "Finish watching", false); continue; }
+    // "Посмотреть:" / "To watch" = to watch (TV or anime depending on block)
+    if (/^посмотреть:?$|^to watch:?$/.test(l)) { setSection(block === "anime" ? "anime" : "tv", "To watch", false); continue; }
+    // "Досмотреть:" / "Finish watching" with colon inside TV block
+    if (/^досмотреть:?$|^finish watching:?$/.test(l) && block === "tv") { setSection("tv", "Finish watching", false); continue; }
 
     /* ---- Otherwise: treat as an item ---- */
     const checked = /\[x\]/i.test(line);
