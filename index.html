@@ -138,6 +138,15 @@
 
   /* Quick actions on a card (edit mode only) */
   .poster-wrap { position: relative; width: 100%; }
+  .book-cover {
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: 16% 12% 12%; text-align: center; color: #241f1a;
+    background: linear-gradient(150deg, #f7f4ee 0%, #ece6da 100%);
+    box-shadow: inset 3px 0 6px rgba(0,0,0,0.12), inset -1px 0 0 rgba(0,0,0,0.05);
+  }
+  .book-cover .bc-title { font-family: Georgia, "Times New Roman", serif; font-weight: 600; font-size: clamp(13px, 2.2vw, 20px); line-height: 1.2; }
+  .book-cover .bc-mark { color: #b98a86; font-size: 20px; opacity: 0.7; }
+  .book-cover .bc-author { font-family: Georgia, "Times New Roman", serif; font-size: clamp(10px, 1.5vw, 13px); letter-spacing: 0.5px; border-top: 1px solid rgba(0,0,0,0.18); padding-top: 6px; }
   .card-actions {
     position: absolute; left: 0; right: 0; bottom: 0;
     display: none; gap: 4px; justify-content: space-between; align-items: stretch;
@@ -475,8 +484,7 @@
 
 <div id="bulkBar" style="display:none">
   <span id="bulkCount">0 selected</span>
-  <button class="btn small" id="bulkStatusBtn">Change status</button>
-  <button class="btn small" id="bulkPosterBtn">Set poster URL</button>
+  <button class="btn small" id="bulkEditBtn">✎ Edit selected</button>
   <button class="btn small" id="bulkFetchBtn">Fetch info + verify</button>
   <button class="btn small" id="bulkDeleteBtn" style="color:var(--danger)">Delete</button>
   <button class="btn small" id="bulkClearBtn">Clear selection</button>
@@ -490,7 +498,7 @@
 <div class="toolbar">
   <div class="search"><div class="search-wrap"><input type="text" id="search" placeholder="Search titles, genres, notes…" /><button type="button" id="searchAll" class="search-all" title="Search across all categories">🌐</button></div></div>
   <select id="sortSel" style="width:auto">
-    <option value="custom">Custom (drag to arrange)</option>
+    <option value="custom">Custom</option>
     <option value="added">Newest added</option>
     <option value="priority">Priority first</option>
     <option value="title">Title A–Z</option>
@@ -615,7 +623,8 @@
 
     <div class="field"><label>Description (English) <button type="button" class="btn small tr-btn" id="trToEn" title="Translate from the Russian description">⇄ from RU</button></label><textarea id="f_description" placeholder="short synopsis…"></textarea></div>
     <div class="field"><label>Description (Russian) <button type="button" class="btn small tr-btn" id="trToRu" title="Translate from the English description">⇄ from EN</button></label><textarea id="f_description_ru" placeholder="краткое описание…"></textarea></div>
-    <div class="field"><label>Notes</label><textarea id="f_notes" placeholder="your thoughts…"></textarea></div>
+    <div class="field"><label>Notes (English) <button type="button" class="btn small tr-btn" id="trNotesEn" title="Translate from Russian notes">⇄ from RU</button></label><textarea id="f_notes" placeholder="your thoughts…"></textarea></div>
+    <div class="field"><label>Notes (Russian) <button type="button" class="btn small tr-btn" id="trNotesRu" title="Translate from English notes">⇄ from EN</button></label><textarea id="f_notes_ru" placeholder="ваши мысли…"></textarea></div>
 
     <div class="modal-actions">
       <button class="btn ghost" id="deleteBtn" style="margin-right:auto; display:none; color:var(--danger)">Delete</button>
@@ -849,10 +858,11 @@ function applyUiLang() {
   const ab = document.getElementById("adminBtn");
   if (ab) { const on = /exit|Выйти|✓/.test(ab.textContent); ab.textContent = on ? (ru ? "⚙ Выйти из админа" : "⚙ Exit admin") : (ru ? "⚙ Режим админа" : "⚙ Admin mode"); }
   const vb = document.getElementById("viewBadge"); if (vb) vb.textContent = ru ? "👁 Просмотр" : "👁 View only";
+  const si = document.getElementById("search"); if (si) si.placeholder = ru ? "Поиск: названия, жанры, заметки…" : "Search titles, genres, notes…";
   // sort dropdown options
   const sortLabels = ru
-    ? { custom: "Своё (перетаскивание)", added: "Сначала новые", priority: "Сначала приоритет", title: "Название А–Я", year: "Год", my_rating: "Моя оценка", imdb_rating: "Оценка IMDb" }
-    : { custom: "Custom (drag to arrange)", added: "Newest added", priority: "Priority first", title: "Title A–Z", year: "Year", my_rating: "My rating", imdb_rating: "IMDb rating" };
+    ? { custom: "Своё", added: "Сначала новые", priority: "Сначала приоритет", title: "Название А–Я", year: "Год", my_rating: "Моя оценка", imdb_rating: "Оценка IMDb" }
+    : { custom: "Custom", added: "Newest added", priority: "Priority first", title: "Title A–Z", year: "Year", my_rating: "My rating", imdb_rating: "IMDb rating" };
   document.querySelectorAll("#sortSel option").forEach(o => { if (sortLabels[o.value]) o.textContent = sortLabels[o.value]; });
   // filter pills
   const setPill = (id, en, rus) => { const el = document.getElementById(id); if (el) { const l = el.querySelector(".pill-lbl"); if (l) l.textContent = ru ? rus : en; } };
@@ -882,6 +892,10 @@ function displaySubtitle(it) {
 function displayDescription(it) {
   if (state.lang === "ru") return it.description_ru || it.description || "";
   return it.description || it.description_ru || ""; // en + both
+}
+function displayNotes(it) {
+  if (state.lang === "ru") return it.notes_ru || it.notes || "";
+  return it.notes || it.notes_ru || ""; // en + both
 }
 
 /* ---- Genre translation (fixed vocabulary, instant, no API) ---- */
@@ -953,6 +967,13 @@ async function fillMissingDescriptions(it) {
   const ru = (it.description_ru || "").trim();
   if (en && !ru) { const t = await translateText(en, "en", "ru"); if (t && !/translation unavailable/.test(t)) it.description_ru = t; }
   else if (ru && !en) { const t = await translateText(ru, "ru", "en"); if (t && !/translation unavailable/.test(t)) it.description = t; }
+}
+// Same for bilingual notes (steer): translate whichever notes side exists to fill the other.
+async function fillMissingNotes(it) {
+  const en = (it.notes || "").trim();
+  const ru = (it.notes_ru || "").trim();
+  if (en && !ru) { const t = await translateText(en, "en", "ru"); if (t && !/translation unavailable/.test(t)) it.notes_ru = t; }
+  else if (ru && !en) { const t = await translateText(ru, "ru", "en"); if (t && !/translation unavailable/.test(t)) it.notes = t; }
 }
 
 let state = { items: [], activeCat: "movies", filter: "", sort: "custom", favOnly: false, recOnly: false, priOnly: false, showStats: false,
@@ -1753,7 +1774,8 @@ function renderGroups() {
         const canon = s => (s || "Other").split(/[,/]/).map(p => { const t = p.trim().toLowerCase(); return GENRE_EN[t] || (GENRE_RU[t] ? p.trim().replace(/\b\w/g, c => c.toUpperCase()) : p.trim()); }).filter(Boolean).join(", ") || "Other";
         items.forEach(it => { const g = canon(it.my_genre); (byGenre[g] = byGenre[g] || []).push(it); });
         Object.keys(byGenre).sort().forEach(genre => {
-          appendSubgroup(group, "genre|" + genre, translateGenreString(genre), byGenre[genre]);
+          const lbl = genre === "Other" ? (state.lang === "ru" ? "Другое" : "Other") : translateGenreString(genre);
+          appendSubgroup(group, "genre|" + genre, lbl, byGenre[genre]);
         });
       // Anime → To watch & Watched: split Films vs Series (item 8)
       } else if (state.activeCat === "anime" && (status === "To watch" || status === "Watched")) {
@@ -1767,8 +1789,8 @@ function renderGroups() {
       } else if ((state.activeCat === "movies" || state.activeCat === "tv") && status === "Watched") {
         const anim = items.filter(it => it.type === "animation");
         const real = items.filter(it => it.type !== "animation");
-        const animL = state.lang === "ru" ? "🎨 Анимация" : "🎨 Animation";
-        const realL = state.lang === "ru" ? "🎬 Не анимация" : "🎬 Non-animation";
+        const animL = state.lang === "ru" ? "Анимация" : "Animation";
+        const realL = state.lang === "ru" ? "Не анимация" : "Non-animation";
         if (anim.length) appendSubgroup(group, "type|" + state.activeCat + "|anim", animL, anim);
         if (real.length) appendSubgroup(group, "type|" + state.activeCat + "|real", realL, real);
       // Books → split Books vs Poems (poems tagged my_genre == "Poem")
@@ -1776,8 +1798,8 @@ function renderGroups() {
         const isPoem = it => it.type === "poem" || (it.my_genre || "").toLowerCase() === "poem";
         const poems = items.filter(isPoem);
         const books = items.filter(it => !isPoem(it));
-        const bookL = state.lang === "ru" ? "📖 Книги" : "📖 Books";
-        const poemL = state.lang === "ru" ? "📝 Стихи" : "📝 Poems";
+        const bookL = state.lang === "ru" ? "Книги" : "Books";
+        const poemL = state.lang === "ru" ? "Стихи" : "Poems";
         if (books.length) appendSubgroup(group, "kind|books|" + status, bookL, books);
         if (poems.length) appendSubgroup(group, "kind|poems|" + status, poemL, poems);
       } else {
@@ -1896,7 +1918,8 @@ function renderCard(it) {
 
   let posterHtml;
   if (it.poster) posterHtml = '<img class="poster" src="' + escapeAttr(it.poster) + '" loading="lazy" onerror="this.replaceWith(makePlaceholder())" />';
-  else posterHtml = '<div class="poster placeholder">' + (it.category === "books" ? "📖" : "🎬") + '</div>';
+  else if (it.category === "books") posterHtml = bookCoverHtml(it);
+  else posterHtml = '<div class="poster placeholder">🎬</div>';
 
   const flags = [];
   if (it.favourite) flags.push('<span class="flag ic-star">★</span>');
@@ -1922,7 +1945,7 @@ function renderCard(it) {
       (it.category === "books" && it.author ? '<div class="card-ru">✍ ' + escapeHtml(it.author) + '</div>' : "") +
       (meta.length ? '<div class="card-meta">' + meta.join("") + '</div>' : "") +
       (it.progress ? '<div class="progress">▶ ' + escapeHtml(it.progress) + '</div>' : "") +
-      (it.my_genre ? '<div class="card-meta"><span>' + escapeHtml(translateGenreString(it.my_genre)) + '</span></div>' : "") +
+      ((it.imdb_genre || it.my_genre) ? '<div class="card-meta"><span>' + escapeHtml(translateGenreString(it.imdb_genre || it.my_genre)) + '</span></div>' : "") +
     '</div>';
 
   // inline star rating (1..10 shown as 5 stars = /2 each; click sets my_rating)
@@ -1974,6 +1997,16 @@ async function persistItem(it) {
   else { syncFlash(true); }
 }
 function makePlaceholder() { const d = document.createElement("div"); d.className = "poster placeholder"; d.textContent = "🎬"; return d; }
+// Generated book cover for books/poems with no poster image (title top, author bottom)
+function bookCoverHtml(it) {
+  const title = escapeHtml(displayTitle(it) || "Untitled");
+  const author = escapeHtml(it.author || "");
+  return '<div class="poster book-cover">' +
+    '<div class="bc-title">' + title + '</div>' +
+    '<div class="bc-mark">❧</div>' +
+    (author ? '<div class="bc-author">' + author + '</div>' : '') +
+    '</div>';
+}
 
 // Status popup menu for a card (3-dot button)
 function openStatusMenu(it, anchor) {
@@ -2106,19 +2139,21 @@ async function openDetail(id) {
   m.style.position = "relative";
 
   const rows = [];
+  const ruL = state.lang === "ru";
+  const L = (en, rus) => ruL ? rus : en;
   const otherTitle = state.lang === "ru" ? it.title : it.title_ru;
-  if (otherTitle && otherTitle !== displayTitle(it)) rows.push([state.lang === "ru" ? "English title" : "Russian title", otherTitle]);
-  if (it.category === "books" && it.author) rows.push(["Author", it.author]);
-  rows.push(["Category", catLabel(it.category)]);
-  rows.push(["Status", displayStatus(it.status)]);
-  if (it.type) rows.push(["Type", displayType(it.type)]);
-  if (it.year) rows.push(["Year", it.year]);
-  if (it.imdb_rating) rows.push(["Rating", it.imdb_rating]);
-  if (it.my_rating) rows.push(["My rating", it.my_rating + "/10"]);
-  if (it.imdb_genre) rows.push(["Genre", translateGenreString(it.imdb_genre)]);
-  if (it.my_genre) rows.push(["My genre", translateGenreString(it.my_genre)]);
-  if (it.progress) rows.push(["Progress", it.progress]);
-  if (it.release_date) rows.push(["Release", (it.release_sure ? "" : "~") + it.release_date]);
+  if (otherTitle && otherTitle !== displayTitle(it)) rows.push([state.lang === "ru" ? "Английское название" : "Russian title", otherTitle]);
+  if (it.category === "books" && it.author) rows.push([L("Author", "Автор"), it.author]);
+  rows.push([L("Category", "Категория"), catLabel(it.category)]);
+  rows.push([L("Status", "Статус"), displayStatus(it.status)]);
+  if (it.type) rows.push([L("Type", "Тип"), displayType(it.type)]);
+  if (it.year) rows.push([L("Year", "Год"), it.year]);
+  if (it.imdb_rating) rows.push(["IMDb", it.imdb_rating]);
+  if (it.my_rating) rows.push([L("My rating", "Моя оценка"), it.my_rating + "/10"]);
+  if (it.imdb_genre) rows.push([L("Genre", "Жанр"), translateGenreString(it.imdb_genre)]);
+  if (it.my_genre) rows.push([L("My genre", "Мой жанр"), translateGenreString(it.my_genre)]);
+  if (it.progress) rows.push([L("Progress", "Прогресс"), it.progress]);
+  if (it.release_date) rows.push([L("Release", "Выход"), (it.release_sure ? "" : "~") + it.release_date]);
   const flags = [it.favourite ? "⭐ Favourite" : "", it.recommend ? "👍 Recommend" : "", it.priority ? "🔺 Priority" : ""].filter(Boolean).join("  ");
 
   const closeX = '<button id="detailX" title="Close" style="position:absolute;top:10px;right:12px;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1">✕</button>';
@@ -2126,8 +2161,9 @@ async function openDetail(id) {
   const summaryBits = [];
   if (it.category === "books" && it.author) summaryBits.push(escapeHtml(it.author));
   if (it.year) summaryBits.push(escapeHtml(it.year));
-  if (it.imdb_rating) summaryBits.push("★ " + escapeHtml(it.imdb_rating));
-  if (it.my_rating) summaryBits.push("me " + escapeHtml(it.my_rating) + "/10");
+  const myRatingWord = state.lang === "ru" ? "Моя оценка" : "My rating";
+  if (it.imdb_rating) summaryBits.push('<span class="ic-star">★</span> IMDb ' + escapeHtml(it.imdb_rating));
+  if (it.my_rating) summaryBits.push('<span class="ic-rec">♥</span> ' + myRatingWord + " " + escapeHtml(it.my_rating) + "/10");
   const genreLine = translateGenreString(it.imdb_genre || it.my_genre || "");
 
   function renderSummary(bigPoster) {
@@ -2177,7 +2213,8 @@ async function openDetail(id) {
 
   async function renderFull() {
     let notesHtml = "";
-    if (it.notes) notesHtml = '<div id="detailNotes" style="clear:both;margin-top:10px;font-size:13px"><span style="color:var(--muted)">Notes:</span><br>' + escapeHtml(it.notes) + '</div>';
+    const noteText = displayNotes(it);
+    if (noteText) notesHtml = '<div id="detailNotes" style="clear:both;margin-top:10px;font-size:13px"><span style="color:var(--muted)">' + (state.lang === "ru" ? "Заметки" : "Notes") + ':</span><br>' + escapeHtml(noteText) + '</div>';
     const poster = it.poster
       ? '<img src="' + escapeAttr(it.poster) + '" style="width:110px;aspect-ratio:2/3;object-fit:cover;border-radius:8px;float:left;margin:0 14px 8px 0" onerror="this.style.display=\'none\'" />' : '';
     m.innerHTML = closeX +
@@ -2242,6 +2279,7 @@ function openEditor(id) {
   g("f_recommend").checked = !!it?.recommend;
   g("f_priority").checked = !!it?.priority;
   g("f_notes").value = it?.notes || "";
+  if (g("f_notes_ru")) g("f_notes_ru").value = it?.notes_ru || "";
 
   document.getElementById("editorOverlay").classList.add("open");
 }
@@ -2274,6 +2312,7 @@ async function saveItem() {
     recommend: document.getElementById("f_recommend").checked,
     priority: document.getElementById("f_priority").checked,
     notes: document.getElementById("f_notes").value,
+    notes_ru: (document.getElementById("f_notes_ru") ? document.getElementById("f_notes_ru").value : ""),
     added: editingId ? (state.items.find(x => x.id === editingId)?.added || Date.now()) : Date.now(),
     order: editingId ? (state.items.find(x => x.id === editingId)?.order) : undefined,
     primary_lang: (editingId ? (state.items.find(x => x.id === editingId)?.primary_lang) : null)
@@ -2281,6 +2320,8 @@ async function saveItem() {
       || (hasCyrillic(g("f_title")) && !g("f_title_ru") ? "ru" : "en")
   };
   if (!item.title) { document.getElementById("autofillNote").textContent = "Please give it a title."; return; }
+  await fillMissingNotes(item);
+  await fillMissingDescriptions(item);
 
   const idx = state.items.findIndex(x => x.id === item.id);
   if (idx >= 0) state.items[idx] = item; else state.items.push(item);
@@ -2317,7 +2358,7 @@ async function saveItem() {
 
 async function deleteItem() {
   if (!editingId) return;
-  if (!confirm("Delete this item?")) return;
+  if (!await themedConfirm(state.lang === "ru" ? "Удалить этот элемент?" : "Delete this item?", state.lang === "ru" ? "Удалить" : "Delete", true)) return;
   const id = editingId;
   state.items = state.items.filter(x => x.id !== id);
   saveLocal();
@@ -2966,22 +3007,22 @@ async function findDuplicates() {
     const k = it.category + "|" + String(it.title).trim().toLowerCase() + "|" + it.status + "|" + typeKey;
     if (seen[k]) dupes.push(it); else seen[k] = it;
   });
-  if (!dupes.length) { alert("No duplicates found — every title is unique within its category, status and type (animation vs non-animation count as different)."); return; }
-  const typeLabel = it => it.type === "animation" ? "🎨 animation" : (it.type ? "🎬 non-animation" : "");
+  if (!dupes.length) { await themedDialog('<div style="font-size:14px;line-height:1.5">' + escapeHtml(state.lang === "ru" ? "Дубликатов не найдено — каждое название уникально в своей категории, статусе и типе (анимация и не-анимация считаются разными)." : "No duplicates found — every title is unique within its category, status and type (animation vs non-animation count as different).") + '</div>', [{ label: "OK", value: true, primary: true }]); return; }
+  const typeLabel = it => it.type === "animation" ? "animation" : (it.type ? "non-animation" : "");
   const list = dupes.slice(0, 40).map(d => {
-    const cat = CATEGORIES[d.category] ? CATEGORIES[d.category].label : d.category;
+    const cat = CATEGORIES[d.category] ? catLabel(d.category) : d.category;
     const tl = typeLabel(d);
-    return "• " + cat + " → " + d.status + (tl ? " (" + tl + ")" : "") + " — " + d.title;
+    return "• " + cat + " → " + displayStatus(d.status) + (tl ? " (" + tl + ")" : "") + " — " + d.title;
   }).join("\n");
   const more = dupes.length > 40 ? "\n…and " + (dupes.length - 40) + " more" : "";
-  if (!confirm("Found " + dupes.length + " duplicate entr" + (dupes.length === 1 ? "y" : "ies") +
-    " (same title, category, status AND type):\n\n" + list + more + "\n\nRemove the extras, keeping one of each?")) return;
+  if (!await themedConfirm("Found " + dupes.length + " duplicate entr" + (dupes.length === 1 ? "y" : "ies") +
+    " (same title, category, status AND type):\n\n" + list + more + "\n\nRemove the extras, keeping one of each?", state.lang === "ru" ? "Удалить" : "Remove", true)) return;
   const ids = new Set(dupes.map(d => d.id));
   state.items = state.items.filter(x => !ids.has(x.id));
   saveLocal();
   renderView();
   if (supa) { for (const id of ids) { try { await supaDelete(id); } catch {} } setSyncDot("on"); syncFlash(true); }
-  alert("Removed " + dupes.length + " duplicate(s).");
+  await themedDialog('<div style="font-size:14px">' + escapeHtml((state.lang === "ru" ? "Удалено дубликатов: " : "Removed ") + dupes.length + (state.lang === "ru" ? "." : " duplicate(s).")) + '</div>', [{ label: "OK", value: true, primary: true }]);
 }
 
 /* ---- Backup reminder ---- */
@@ -3028,6 +3069,40 @@ async function importBooks() {
   setTimeout(() => document.getElementById("booksOverlay").classList.remove("open"), 1800);
 }
 
+/* ---- Theme-aware dialogs (replace native alert/confirm/prompt) ---- */
+function themedDialog(bodyHtml, buttons) {
+  return new Promise(resolve => {
+    const ov = document.createElement("div");
+    ov.className = "overlay open"; ov.style.zIndex = "300";
+    ov.innerHTML = '<div class="modal" style="max-width:460px">' + bodyHtml +
+      '<div class="modal-actions" id="tdActions"></div></div>';
+    const acts = ov.querySelector("#tdActions");
+    buttons.forEach(b => {
+      const btn = document.createElement("button");
+      btn.className = "btn" + (b.primary ? " primary" : "") ; if (b.danger) btn.style.color = "var(--danger)";
+      btn.textContent = b.label;
+      btn.onclick = () => {
+        // snapshot any form fields (by id) before we tear the overlay down
+        const snap = {};
+        ov.querySelectorAll("input,select,textarea").forEach(el => {
+          if (!el.id) return;
+          const key = el.id.replace(/^be_/, "");
+          snap[key] = (el.type === "checkbox") ? el.checked : el.value;
+        });
+        window._beSnapshot = snap; window._tdSnapshot = snap;
+        ov.remove(); resolve(b.value);
+      };
+      acts.appendChild(btn);
+    });
+    document.body.appendChild(ov);
+    const f = ov.querySelector("input,select,textarea"); if (f) f.focus();
+  });
+}
+function themedConfirm(message, okLabel, danger) {
+  const ru = state.lang === "ru";
+  return themedDialog('<div style="font-size:14px;line-height:1.5;white-space:pre-wrap">' + escapeHtml(message) + '</div>',
+    [{ label: ru ? "Отмена" : "Cancel", value: false }, { label: okLabel || (ru ? "OK" : "OK"), value: true, primary: true, danger: danger }]);
+}
 /* ---- Multi-select + bulk actions ---- */
 // Before/after confirmation for a proposed fetch change (item 7).
 // Returns a Promise<boolean>: true = apply, false = skip.
@@ -3109,28 +3184,54 @@ async function bulkPersist(items) {
   if (supa) { for (const it of items) { try { await supaUpsert(it); } catch {} } setSyncDot("on"); syncFlash(true); }
   else syncFlash(true);
 }
-async function bulkChangeStatus() {
+async function bulkEdit() {
   const items = selectedItems(); if (!items.length) return;
-  // statuses valid for ALL selected (intersection); fall back to the first item's category set
+  const ru = state.lang === "ru";
   const cats = [...new Set(items.map(i => i.category))];
-  let statuses = CATEGORIES[cats[0]].statuses;
+  // shared statuses across selected categories
+  let statuses = CATEGORIES[cats[0]].statuses.slice();
   cats.forEach(c => { statuses = statuses.filter(s => CATEGORIES[c].statuses.includes(s)); });
-  if (!statuses.length) { alert("Selected items are from categories with no shared status — select within one category to change status."); return; }
-  const choice = prompt("Change status of " + items.length + " item(s) to one of:\n\n" + statuses.join("\n") + "\n\nType it exactly:");
-  if (!choice || !statuses.includes(choice.trim())) { if (choice !== null) alert("That status isn't valid for all selected."); return; }
-  items.forEach(it => it.status = choice.trim());
-  await bulkPersist(items);
-}
-async function bulkSetPoster() {
-  const items = selectedItems(); if (!items.length) return;
-  const url = prompt("Set this poster URL for all " + items.length + " selected item(s):", "");
-  if (url === null) return;
-  items.forEach(it => it.poster = url.trim());
+  const singleCat = cats.length === 1 ? cats[0] : null;
+  const noChange = ru ? "— не менять —" : "— leave unchanged —";
+  const optList = (arr, mapLabel) => '<option value="__keep__">' + noChange + '</option>' + arr.map(v => '<option value="' + escapeAttr(v) + '">' + escapeHtml(mapLabel ? mapLabel(v) : v) + '</option>').join("");
+  const typeOpts = singleCat === "books"
+    ? [["book", ru ? "Книга" : "Book"], ["poem", ru ? "Стихи" : "Poem"]]
+    : [["real", ru ? "Не анимация" : "Non-animation"], ["animation", ru ? "Анимация" : "Animation"]];
+  const body =
+    '<h2 style="margin-top:0">' + (ru ? "Изменить выбранные (" : "Edit selected (") + items.length + ')</h2>' +
+    '<div style="display:flex;flex-direction:column;gap:10px">' +
+      '<label>' + (ru ? "Категория" : "Category") + '<select id="be_cat" style="width:100%">' + optList(CAT_KEYS, catLabel) + '</select></label>' +
+      '<label>' + (ru ? "Статус" : "Status") + '<select id="be_status" style="width:100%">' + optList(statuses.length ? statuses : [], displayStatus) + '</select>' + (statuses.length ? '' : '<div style="color:var(--muted);font-size:12px">' + (ru ? "нет общего статуса" : "no shared status") + '</div>') + '</label>' +
+      '<label>' + (ru ? "Тип" : "Type") + '<select id="be_type" style="width:100%">' + optList(typeOpts.map(t => t[0]), v => (typeOpts.find(t => t[0] === v) || [,v])[1]) + '</select></label>' +
+      '<label>' + (ru ? "Мой жанр (заменит)" : "My genre (replaces)") + '<input type="text" id="be_genre" placeholder="' + (ru ? "оставьте пустым — не менять" : "leave blank = unchanged") + '" style="width:100%" /></label>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        '<label class="check"><input type="checkbox" id="be_fav"> ★ ' + (ru ? "Избранное" : "Favourite") + '</label>' +
+        '<label class="check"><input type="checkbox" id="be_rec"> ♥ ' + (ru ? "Рекомендую" : "Recommend") + '</label>' +
+        '<label class="check"><input type="checkbox" id="be_pri"> 💡 ' + (ru ? "Приоритет" : "Priority") + '</label>' +
+        '<label class="check"><input type="checkbox" id="be_flagoff"> ' + (ru ? "снять отмеченные" : "turn selected OFF") + '</label>' +
+      '</div>' +
+      '<div style="color:var(--muted);font-size:12px">' + (ru ? "Отмеченные маркеры включатся; «снять» — выключит их вместо включения." : "Checked markers turn ON; tick 'turn OFF' to clear them instead.") + '</div>' +
+    '</div>';
+  const go = await themedDialog(body, [{ label: ru ? "Отмена" : "Cancel", value: false }, { label: ru ? "Применить" : "Apply", value: true, primary: true }]);
+  if (!go) return;
+  const be = window._beSnapshot || {};
+  const newCat = be.cat, newStatus = be.status, newType = be.type, newGenre = be.genre;
+  const flagOff = be.flagoff;
+  items.forEach(it => {
+    if (newCat && newCat !== "__keep__") it.category = newCat;
+    if (newStatus && newStatus !== "__keep__") it.status = newStatus;
+    if (newType && newType !== "__keep__") it.type = newType;
+    if (newGenre && newGenre.trim()) it.my_genre = newGenre.trim();
+    if (be.fav) it.favourite = !flagOff;
+    if (be.rec) it.recommend = !flagOff;
+    if (be.pri) it.priority = !flagOff;
+  });
   await bulkPersist(items);
 }
 async function bulkDelete() {
   const items = selectedItems(); if (!items.length) return;
-  if (!confirm("Delete " + items.length + " selected item(s)? This cannot be undone.")) return;
+  const ru = state.lang === "ru";
+  if (!await themedConfirm((ru ? "Удалить выбранные (" : "Delete ") + items.length + (ru ? ") элемент(ов)? Это необратимо." : " selected item(s)? This cannot be undone."), ru ? "Удалить" : "Delete", true)) return;
   const ids = new Set(items.map(i => i.id));
   state.items = state.items.filter(x => !ids.has(x.id));
   state.selected = {};
@@ -3232,6 +3333,21 @@ function init() {
     const t = await translateText(src, "en", "ru");
     document.getElementById("f_description_ru").value = t; btn.textContent = old;
   };
+  // Notes translate buttons (steer)
+  const trNEn = document.getElementById("trNotesEn");
+  if (trNEn) trNEn.onclick = async () => {
+    const src = document.getElementById("f_notes_ru").value.trim();
+    if (!src) return;
+    const old = trNEn.textContent; trNEn.textContent = "…";
+    document.getElementById("f_notes").value = await translateText(src, "ru", "en"); trNEn.textContent = old;
+  };
+  const trNRu = document.getElementById("trNotesRu");
+  if (trNRu) trNRu.onclick = async () => {
+    const src = document.getElementById("f_notes").value.trim();
+    if (!src) return;
+    const old = trNRu.textContent; trNRu.textContent = "…";
+    document.getElementById("f_notes_ru").value = await translateText(src, "en", "ru"); trNRu.textContent = old;
+  };
 
   // Add an Auto-fill button next to the search box dynamically
   const af = document.createElement("button");
@@ -3275,8 +3391,7 @@ function init() {
 
   // Multi-select + bulk actions
   document.getElementById("selectBtn").onclick = toggleSelectMode;
-  document.getElementById("bulkStatusBtn").onclick = bulkChangeStatus;
-  document.getElementById("bulkPosterBtn").onclick = bulkSetPoster;
+  document.getElementById("bulkEditBtn").onclick = bulkEdit;
   document.getElementById("bulkFetchBtn").onclick = bulkFetch;
   document.getElementById("bulkDeleteBtn").onclick = bulkDelete;
   document.getElementById("bulkClearBtn").onclick = () => { const ids = Object.keys(state.selected); state.selected = {}; paintSelection(ids); updateBulkCount(); };
